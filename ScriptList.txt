@@ -1,0 +1,4 @@
+Scripts used for Rotten Ice paper
+by Carie Frantz cariefrantz@weber.edu
+
+ChemDataPCA.py	Used to generate PCA plots of physical and chemical habitat parameters
