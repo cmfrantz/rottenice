@@ -7,6 +7,7 @@ Created on Wed Jun 26 15:50:09 2019
 
 This script creates 2D PCA plots from imported metadata
 It was created as part of the Rotten Ice Project
+It uses the Master Bio-Chem Sample Sheet Excel file 'meta_for_python' tab as input
 
 Copyright (C) 2019  Carie M. Frantz
 
@@ -34,6 +35,7 @@ from sklearn.preprocessing import StandardScaler
 from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 
 # %%
