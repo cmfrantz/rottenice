@@ -4,10 +4,11 @@ by Carie Frantz cariefrantz@weber.edu
 
 List of scripts:
 
-<ol>
-<li>ChemDataPCA.py		Used to generate PCA plots of physical and chemical habitat parameters</li>
-<li>ChemHeatmaps.py		Used to generate heatmaps of sample metadata (physical, chemical, and biological measurements)</li>
-</ol>
+<table border=0>
+<th><td>Script</td><td>Description</td><td>Data files used</td></th>
+<tr>ChemDataPCA.py</td><td>Used to generate PCA plots of physical and chemical habitat parameters</td><td>Master Bio-Chem Sample Sheet (Metadata).xls</td></tr>
+<tr>ChemHeatmaps.py</td><td>Used to generate heatmaps of sample metadata (physical, chemical, and biological measurements)</td><td>Master Bio-Chem Sample Sheet (Metadata).xls</td></tr>
+</table>
 
 Need to add:
 
