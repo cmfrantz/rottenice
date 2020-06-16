@@ -4,10 +4,15 @@ by Carie Frantz cariefrantz@weber.edu
 
 List of scripts:
 
-ChemDataPCA.py		Used to generate PCA plots of physical and chemical habitat parameters
-ChemHeatmaps.py		Used to generate heatmaps of sample metadata (physical, chemical, and biological measurements)
+<ol>
+<li>ChemDataPCA.py		Used to generate PCA plots of physical and chemical habitat parameters</li>
+<li>ChemHeatmaps.py		Used to generate heatmaps of sample metadata (physical, chemical, and biological measurements)</li>
+</ol>
 
 Need to add:
-Clustermap
-BarPlots
-AlgaeBarPlots
+
+<ul>
+<li>Clustermap</li>
+<li>BarPlots</li>
+<li>AlgaeBarPlots</li>
+</ul>
