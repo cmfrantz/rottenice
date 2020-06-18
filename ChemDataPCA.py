@@ -1,13 +1,35 @@
-<<<<<<< HEAD
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 26 15:50:09 2019
+__author__ = 'Carie Frantz'
+__email__ = 'cariefrantz@weber.edu'
 
+"""Rotten Ice Project: ChemDataPCA
+
+Created on Wed Jun 26 15:50:09 2019
 @author: cariefrantz
 
+CREATE 2D PCA PLOTS FROM IMPORTED METADATA
 This script creates 2D PCA plots from imported metadata
 It was created as part of the Rotten Ice Project
-It uses the Master Bio-Chem Sample Sheet Excel file 'meta_for_python' tab as input
+
+Arguments:  None
+
+Requirements:   Master Bio-Chem Sample Sheet (xls) file
+                with tab 'meta_for_python'
+                where rows = samples, columns = metadata characteristics
+
+Example in command line:
+    python ChemDataPCA.py
+
+Dependencies Install:
+    sudo apt-get install python3-pip python3-dev
+    pip install os
+    pip install tkinter
+    pip install pandas
+    pip install numpy
+    pip install matplotlib
+    pip install sklearn
+
 
 Copyright (C) 2019  Carie M. Frantz
 
@@ -25,169 +47,180 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
 
-import pandas as pd
-import numpy as np
+
+####################
+# IMPORTS
+####################
 import os
 from tkinter import filedialog
 from tkinter import *
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+import pandas as pd
+import numpy as np
+
 from matplotlib import pyplot as plt
 import matplotlib
+# Define the font type to make exported plots editable in Illustrator
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
-
-# %%
-
-# Read the bio-chem data in from master Excel file
-root = Tk()
-root.filename = filedialog.askopenfilename(initialdir = "/", title = "Select bio-chem raw data master file (*.xls)")
-filename = root.filename
-print (filename)                        # Prints the filename
-root.destroy()                          # Closes the user input window
-dirPath = os.path.dirname(os.path.abspath(filename)) # Get the file directory from the filename
-dataSet = pd.read_excel(filename,sheet_name="meta_for_python")  # Reads in all of the data from the "meta_for_python" sheet
-dataSet.columns = dataSet.iloc[1]   # Sets the column names to the short form
-dataSet = dataSet.reindex(dataSet.index.drop([0,1])) # Drops the extra columns / header rows
-# dataSet = dataSet.set_index('SampleID') # Use sample names as indices
-# %%
-# Define and normalize the data
-# (PCA is affected by scale)
-# Update this if spreadsheet is updated with all numerical, scalable values
-#List of parameters that could be used: "temperature", "Salnity", "bulk_density", "DOC", "Chl", "Phaeo", "FoFa", "PAM", "bact_cell_ct", "CTC", "bact_active_cell_ct", "pEPS", "POC", "Nitrogen", "CN"
-features = ["DOC","POC","pEPS","Nitrogen"]
-plotTags = ['month','SampleID','plot_color','plot_shape']
-x = dataSet.loc[:,features].values  # Grabs the numberical data
-y = pd.DataFrame(dataSet.loc[:,plotTags].values) # Defines the target (the dependent variable)
-y.columns = plotTags    # Add column headers
-x = StandardScaler().fit_transform(x)   # Normalize the data
-
-# %%
-# PCA
-pca = PCA(n_components=2)   # 2-D PCA
-principalComponents = pca.fit_transform(x)  # Perform PCA on the data
-principalDf = pd.DataFrame(data = principalComponents, columns = ['principal component 1','principal component 2']) # Add headers to the result
-finalDf = pd.concat([principalDf, y], axis=1)   # Add sample info & plot settings to the result
-finalDf = finalDf.set_index('SampleID') # Use sample names as indices
-explained_var = pca.explained_variance_ratio_
-# %%
-# Plot
-
-# Create the plot & label axes
-fig = plt.figure(figsize = (8,8))
-ax = fig.add_subplot(1,1,1) 
-ax.set_xlabel('Principal Component 1 (' + str(round(explained_var[0],2)*100) + '%)', fontsize = 15)
-ax.set_ylabel('Principal Component 2 (' + str(round(explained_var[1],2)*100) + '%)', fontsize = 15)
-ax.set_title('2 component PCA', fontsize = 20)
-
-# Plot the data
-samples = y['SampleID'].values  # List of samples to plot
-
-for sample in samples:  # Plot each sample individually
-    ax.scatter(finalDf.loc[sample, 'principal component 1']     # x value
-    , finalDf.loc[sample, 'principal component 2']  # y value
-    , c=finalDf.loc[sample,'plot_color']    # marker color
-    , s=50  # marker size
-    , marker=finalDf.loc[sample,'plot_shape'])  # marker shape
-
-ax.legend(samples)  # add legend
-# ax.grid() # add grid (optional)
-fig.savefig(dirPath + "\\metadata_PCA_" + '-'.join(features) + ".pdf", transparent=True) # Save figure
-
-=======
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 26 15:50:09 2019
-
-@author: cariefrantz
-
-This script creates 2D PCA plots from imported metadata
-It was created as part of the Rotten Ice Project
-
-Copyright (C) 2019  Carie M. Frantz
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>
-"""
-
-import pandas as pd
-import numpy as np
-import os
-from tkinter import filedialog
-from tkinter import *
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from matplotlib import pyplot as plt
-import matplotlib
-matplotlib.rcParams['pdf.fonttype'] = 42
 
 
-# %%
+####################
+# VARIABLES
+####################
 
-# Read the bio-chem data in from master Excel file
-root = Tk()
-root.filename = filedialog.askopenfilename(initialdir = "/", title = "Select bio-chem raw data master file (*.xls)")
-filename = root.filename
-print (filename)                        # Prints the filename
-root.destroy()                          # Closes the user input window
-dirPath = os.path.dirname(os.path.abspath(filename)) # Get the file directory from the filename
-dataSet = pd.read_excel(filename,sheet_name="meta_for_python")  # Reads in all of the data from the "meta_for_python" sheet
-dataSet.columns = dataSet.iloc[1]   # Sets the column names to the short form
-dataSet = dataSet.reindex(dataSet.index.drop([0,1])) # Drops the extra columns / header rows
-# dataSet = dataSet.set_index('SampleID') # Use sample names as indices
-# %%
-# Define and normalize the data
-# (PCA is affected by scale)
-# Update this if spreadsheet is updated with all numerical, scalable values
-#List of parameters that could be used: "temperature", "Salnity", "bulk_density", "DOC", "Chl", "Phaeo", "FoFa", "PAM", "bact_cell_ct", "CTC", "bact_active_cell_ct", "pEPS", "POC", "Nitrogen", "CN"
-features = ["DOC","POC","pEPS","Nitrogen"]
-plotTags = ['month','SampleID','plot_color','plot_shape']
-x = dataSet.loc[:,features].values  # Grabs the numberical data
-y = pd.DataFrame(dataSet.loc[:,plotTags].values) # Defines the target (the dependent variable)
-y.columns = plotTags    # Add column headers
-x = StandardScaler().fit_transform(x)   # Normalize the data
+# List of parameters that could be used for PCA
+featlist = ["temperature", "salinity", "bulk_density",
+            "DOC", "POC", "pEPS", "nitrogen", "CN",
+            "Chl", "Phaeo", "FoFa", "PAM",
+            "bact_cell_ct", "CTC", "bact_active_cell_ct",
+            "diatom_ct", "phyto_ct_all", "phyto_ct_other"]
 
-# %%
-# PCA
-pca = PCA(n_components=2)   # 2-D PCA
-principalComponents = pca.fit_transform(x)  # Perform PCA on the data
-principalDf = pd.DataFrame(data = principalComponents, columns = ['principal component 1','principal component 2']) # Add headers to the result
-finalDf = pd.concat([principalDf, y], axis=1)   # Add sample info & plot settings to the result
-finalDf = finalDf.set_index('SampleID') # Use sample names as indices
-explained_var = pca.explained_variance_ratio_
-# %%
-# Plot
+# Input file variables
+metadata_tab = 'Metadata (Raw)'     # Excel file tab containing the metadata
+metadata_row = 2                    # Row containing unique metadata names
+sample_col = 0                      # Column containing unique sample names
+# data_start_row = 3                  # Row (starting from 0) where data starts
 
-# Create the plot & label axes
-fig = plt.figure(figsize = (8,8))
-ax = fig.add_subplot(1,1,1) 
-ax.set_xlabel('Principal Component 1 (' + str(round(explained_var[0],2)*100) + '%)', fontsize = 15)
-ax.set_ylabel('Principal Component 2 (' + str(round(explained_var[1],2)*100) + '%)', fontsize = 15)
-ax.set_title('2 component PCA', fontsize = 20)
+# Plot formatting variables
+# Assign color by sample month
+# (this also serves as the list of months to plot)
+months = {
+    'M'     : 'blue',
+    'JN'    : 'green',
+    'JY11'  : 'red'
+    }
+# Assign marker by sample horizon
+# (this also serves as the list of horizons to plot)
+horizons = {
+    'HT'    : '^',
+    'HM'    : 'o',
+    'HB'    : 'v'
+    }
 
-# Plot the data
-samples = y['SampleID'].values  # List of samples to plot
 
-for sample in samples:  # Plot each sample individually
-    ax.scatter(finalDf.loc[sample, 'principal component 1']     # x value
-    , finalDf.loc[sample, 'principal component 2']  # y value
-    , c=finalDf.loc[sample,'plot_color']    # marker color
-    , s=50  # marker size
-    , marker=finalDf.loc[sample,'plot_shape'])  # marker shape
+####################
+# FUNCTIONS
+####################
+def genSampleName(month, horizon):
+    '''Generates the sample name from month and horizon'''
+    if 'JY' in month:
+        sample = month + '-' + horizon
+    else:
+        sample = month + '-CS-' + horizon
+    return sample
 
-ax.legend(samples)  # add legend
-# ax.grid() # add grid (optional)
-fig.savefig(dirPath + "\\metadata_PCA_" + '-'.join(features) + ".pdf", transparent=True) # Save figure
 
->>>>>>> 342ad789dfd262dcea074b050d0df35a278136d9
+def readMetadata():
+    '''This function reads the sample metadata in from Excel file'''
+    # User input dialog to locate the metadata file
+    root = Tk()
+    root.filename = filedialog.askopenfilename(
+        initialdir = "/", 
+        title = "Select metadata file (*.xls)")
+    filename = root.filename
+    print (filename)                        # Prints the filename
+    root.destroy()                          # Closes the user input window
+    dirPath = os.path.dirname(os.path.abspath(filename)) # Get directory
+    
+    # Read metadata tab
+    metadata = pd.read_excel(filename, sheet_name = metadata_tab,
+                            header = metadata_row, index_col = sample_col)
+    
+    return filename, dirPath, metadata
+
+
+def prepData(metadata):
+    '''Prepare data from user-selected features'''
+    # Ask user for features to plot
+    features = input('''
+                     Enter the list of features to include in the PCA,
+                     seperated by commas (e.g.,  > temperature, salinity, DOC )
+                     
+                     Options include:
+                         ''' + ', '.join(featlist) + '  > ')
+    features = features.split(', ')
+    metadata = metadata[features]
+    
+    # Generate list of samples and their plot formatting info
+    samples = []
+    datafmt = pd.DataFrame(index = metadata.index, columns=['color', 'marker'])
+    for month in months:
+        for horizon in horizons:
+            sample = genSampleName(month, horizon)
+            datafmt.loc[sample,'color'] = months[month]
+            datafmt.loc[sample,'marker'] = horizons[horizon]
+            samples.append(sample)
+    data = metadata.merge(datafmt, left_index = True, right_index = True)
+    data = data.loc[samples]
+   
+    return data, features
+
+
+def calcPCA(data, features):
+    '''Perform principal components analysis'''
+    # Normalize data for PCA (PCA is affected by scale)
+    vals = StandardScaler().fit_transform(data[features])
+    
+    # Calculate 2D PCA
+    pca = PCA(n_components = 2)     # 2-component PCA
+    principalComponents = pca.fit_transform(vals)
+    explained_var = pca.explained_variance_ratio_
+    data['PC1'] = principalComponents[:,0]
+    data['PC2'] = principalComponents[:,1]
+        
+    return data, explained_var
+        
+
+def plotResults(data, features, explained_var, dirPath):
+    # Create the plot & label axes
+    fig = plt.figure(figsize = (8,8))
+    ax = fig.add_subplot(1,1,1) 
+    
+    # Add title
+    ax.set_title('2 component PCA: ' + ', '.join(features))
+    
+    # Add axis titles
+    ax.set_xlabel('PC1 (' + str(round(explained_var[0]*100, 1)) + '%)',
+                  fontsize = 15)
+    ax.set_ylabel('PC2 (' + str(round(explained_var[1]*100, 1)) + '%)',
+                  fontsize = 15)
+    
+    # Plot each point  
+    for sample in data.index:
+        ax.scatter(data.loc[sample, 'PC1'],                 # x value
+                   data.loc[sample, 'PC2'],                 # y value
+                   c = data.loc[sample, 'color'],           # marker color
+                   marker = data.loc[sample, 'marker'],     # marker shape
+                   s=50)                                    # marker size
+    
+    # Add legend
+    ax.legend(data.index)
+    
+    # Show and save figure
+    plt.show()
+    fig.savefig(dirPath + "\\metadata_PCA_" + '-'.join(features) + ".pdf", transparent=True) # Save figure
+
+
+####################
+# MAIN FUNCTION
+####################
+if __name__ == '__main__':
+    # Retrieve the metadata file
+    filename, dirPath, metadata = readMetadata()
+    
+    # Loop for as many plots as user wants to build
+    while True:
+        # Prep the data for PCA based on user input for which variables to use
+        data, features = prepData(metadata)
+        # Perform PCA
+        data, explained_var = calcPCA(data, features)
+        # Plot results
+        plotResults(data, features, explained_var, dirPath)
+        # Ask user if they want to build another plot
+        if input('Build another plot? Y/N  > ') == 'N':
+            break
+    
+    
