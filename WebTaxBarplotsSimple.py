@@ -211,7 +211,6 @@ def buildPlot(pltdata, samples, level, colors, pltkey, legend=False):
     p.xgrid.grid_line_color = None
     p.xaxis.major_label_orientation = pi/4
     p.axis.minor_tick_line_color = None
-    # p.yaxis.major_label_precision = 0  # Don't know how to get this to work
     
     # Add legend
     if displayprops[pltkey]['legend'] == True:
@@ -247,9 +246,10 @@ def genLegend(taxlist, vbars):
 if __name__ == '__main__':
     
     # Get and format file
-    filename, filepath, data = RottenIceModules.fileGet('Select OTU table file')
-    data, samples = RottenIceModules.formatOTUtableData(data, max_level = max_level)
-    [data, samples] = readFile(filename)
+    filename, filepath, data = RottenIceModules.fileGet(
+        'Select OTU table file')
+    data, samples = RottenIceModules.formatOTUtableData(
+        data, max_level = max_level)
           
     # Get the colors (disable to use default colors)
     # cmap = input(cmaptext)

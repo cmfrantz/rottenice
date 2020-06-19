@@ -68,8 +68,9 @@ from bokeh.plotting import figure
 ####################
 # Listed alphabetically by name
 
-def buildBarPlot(plt_data, colorlist, y_max, title='', y_label = 'Abundance',
-                 invert = False, show_x_ax = True, legend = False,
+def buildBarPlot(plt_data, colorlist, y_max, filename, title='',
+                 y_label = 'Abundance', invert = False,
+                 show_x_ax = True, legend = False,
                  figoptions={}):
     '''Builds a bokeh interactive bar plot of taxonomy data
 
@@ -83,6 +84,8 @@ def buildBarPlot(plt_data, colorlist, y_max, title='', y_label = 'Abundance',
     colorlist : list of tuples
         List of colors to use for each bar. Length of colorlist should be \
             the same as the number of taxonomic values in the passed dict.
+    filename : str
+        String filepath + filename to save svg image of barplot.
     y_label : str, optional)
         String to use for the y-axis label. The default is 'Abundance'.
     y_max : float or int
@@ -150,19 +153,19 @@ def buildNavDiv(cmap):
 
 
 def colorsFromCmap(n, cmap):
-    '''Generate the set of colors to use from the chosen colormap               Fill in
+    '''Generate the set of colors to use from the chosen colormap
 
     Parameters
     ----------
     n : int
-        DESCRIPTION.
+        Number of colors needed (number of items to color).
     cmap : str
        The matplotlib colormap name to use for picking colors.
 
     Returns
     -------
-    colors : type
-        DESCRIPTION.
+    colors : list of str
+        List of hex color codes for each item.
     '''
     colormap = plt.get_cmap(cmap)
     colorset = colormap(np.linspace(0,1,n))
@@ -201,7 +204,7 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     uniques=[]
     for level in np.arange(1, max_level+1):
         cols_sub = levelCols(level)
-        uniquetax = list(set(genTaxNames(taxset[cols_sub])))
+        uniquetax = getUnique(taxset[cols_sub])
         uniques.append(uniquetax)
         if len(uniquetax) > 256: break
     cmaplevel = level-1
@@ -209,7 +212,7 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     # Generate colors for each OTU at the highest taxonomic level
     # Generate tax names for each group at the level
     cols_clevel = levelCols(cmaplevel)
-    uniquetax = list(set(genTaxNames(taxset[cols_clevel])))
+    uniquetax = getUnique(genTaxName(taxset[cols_clevel]))
     print('Using Level ' + str(cmaplevel) + ' for colormap index ('
           + str(len(uniquetax)) + ' unique values)')
     uniquetax.sort()
@@ -217,7 +220,7 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     colordict = dict(zip(uniquetax, colorlist))
     
     # Fill in the values for the max level and all lower levels
-    taxset['taxonomy'] = genTaxNames(taxset[cols_clevel])
+    taxset['taxonomy'] = genTaxName(taxset[cols_clevel])
     cols_low = np.setdiff1d(levelCols(max_level), levelCols(cmaplevel-1))
     print('Assigning colors to L' + str(cmaplevel) + '-L'
           + str(max_level) + '...')
@@ -231,7 +234,7 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     # At each level, pick the mid value for each set.
     for level in range(cmaplevel-1, 0, -1):
         cols_sub = levelCols(level)
-        taxlist = genTaxNames(taxset[cols_sub])
+        taxlist = genTaxName(taxset[cols_sub])
         # Get unique list of tax values at this level
         # Loop through each unique value
         for taxval in uniques[level-1]:
@@ -279,7 +282,7 @@ def condenseDataset(data, level, samples):
     print('Condensing dataset at L' + str(level) + '...')
     # Generate list of unique taxonomic values at the selected level
     cols = levelCols(level)
-    taxnames = genTaxNames(data[cols])
+    taxnames = genTaxName(data[cols])
     data['taxonomy'] = taxnames
     taxlist = getUnique(taxnames)
     
@@ -402,7 +405,7 @@ def findAbundantTaxa(datasets, samples, fcutoff = 0.1, maxtaxa = 100):
         dataset = dataset.sort_values('totals', ascending = False)
         rows = rows + list(dataset.iloc[0:n].index)
         abundantTaxa.append(dataset.loc[rows,'taxonomy'])
-    return newtax
+    return abundantTaxa
                 
 
 def findMaxAxVal(maxval, minticks, minstepsize):
@@ -499,6 +502,12 @@ def formatOTUtableData(OTU_table, max_level = 14, taxReassignList = []):
     OTU_table[samples] = OTU_table[samples].astype(float)
 
     return OTU_table, samples
+
+
+def genTaxName(taxcols):
+    '''Generates combined taxonomy names from individual levels'''
+    taxname = ['>'.join(list(taxcols.loc[i])) for i in list(taxcols.index)]
+    return taxname
 
 
 def getUnique(value_list):
