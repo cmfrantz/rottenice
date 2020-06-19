@@ -7,16 +7,19 @@ __email__ = 'cariefrantz@weber.edu'
 
 Created on Wed Jun 26 15:50:09 2019
 @author: cariefrantz
+@project: RottenIce
 
 CREATE 2D PCA PLOTS FROM IMPORTED METADATA
 This script creates 2D PCA plots from imported metadata
-It was created as part of the Rotten Ice Project
+
+This script was created as part of the Rotten Ice Project
 
 Arguments:  None
 
-Requirements:   Master Bio-Chem Sample Sheet (xls) file
-                with tab 'meta_for_python'
-                where rows = samples, columns = metadata characteristics
+Requirements:      
+    Metadata table (csv)
+        where rows = samples, columns = metadata characteristics
+        header row and index column are specified in the variables below
 
 Example in command line:
     python ChemDataPCA.py
@@ -59,7 +62,7 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 import matplotlib
-# Define the font type to make exported plots editable in Illustrator
+# Define the font type to make exported plots editable in Adobe Illustrator
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
@@ -79,12 +82,11 @@ featlist = ["temperature", "salinity", "bulk_density",
             "diatom_ct", "phyto_ct_all", "phyto_ct_other"]
 
 # Input file variables
-metadata_tab = 'Metadata (Raw)'     # Excel file tab containing the metadata
 metadata_row = 2                    # Row containing unique metadata names
 sample_col = 0                      # Column containing unique sample names
-# data_start_row = 3                  # Row (starting from 0) where data starts
 
 # Plot formatting variables
+site = 'CS' # Restrict analysis to CS samples
 # Assign color by sample month
 # (this also serves as the list of months to plot)
 months = {
@@ -109,38 +111,44 @@ def genSampleName(month, horizon):
     if 'JY' in month:
         sample = month + '-' + horizon
     else:
-        sample = month + '-CS-' + horizon
+        sample = month + '-' + site + '-' + horizon
     return sample
 
 
 def readMetadata():
-    '''This function reads the sample metadata in from Excel file'''
+    '''This function reads the sample metadata in from csv file'''
     # User input dialog to locate the metadata file
-    root = Tk()
-    root.filename = filedialog.askopenfilename(
-        initialdir = "/", 
-        title = "Select metadata file (*.xls)")
-    filename = root.filename
-    print (filename)                        # Prints the filename
-    root.destroy()                          # Closes the user input window
-    dirPath = os.path.dirname(os.path.abspath(filename)) # Get directory
+    root = Tk()                     # Opens user input window
+    root.filename = filedialog.askopenfilename(     # Ask user for file
+                            initialdir = "/",
+                            title = 'Select metadata file',
+                            filetypes = [('CSV', '*.csv')])
+    filename = root.filename        # Retrieves the selected filename
+    root.destroy()                  # Closes the user input window
+    dirPath = os.path.dirname(filename)     # Directory
+    print('Loading ' + filename + '...')
     
     # Read metadata tab
-    metadata = pd.read_excel(filename, sheet_name = metadata_tab,
-                            header = metadata_row, index_col = sample_col)
+    metadata = pd.read_csv(filename, header = metadata_row,
+                           index_col = sample_col)
     
-    return filename, dirPath, metadata
+    # replace invalid values
+    metadata = metadata.replace('na', np.nan)
+
+    return metadata, filename, dirPath
 
 
 def prepData(metadata):
     '''Prepare data from user-selected features'''
     # Ask user for features to plot
     features = input('''
-                     Enter the list of features to include in the PCA,
-                     seperated by commas (e.g.,  > temperature, salinity, DOC )
+*** Enter the list of features to include in the PCA ***
+Seperate items with commas as in the example below:
+> temperature, salinity, DOC, nitrogen
                      
-                     Options include:
-                         ''' + ', '.join(featlist) + '  > ')
+Options include: ''' + ', '.join(featlist) + '''
+> ''')
+
     features = features.split(', ')
     metadata = metadata[features]
     
@@ -203,13 +211,13 @@ def plotResults(data, features, explained_var, dirPath):
     plt.show()
     fig.savefig(dirPath + "\\metadata_PCA_" + '-'.join(features) + ".pdf", transparent=True) # Save figure
 
-
+#%%
 ####################
 # MAIN FUNCTION
 ####################
 if __name__ == '__main__':
     # Retrieve the metadata file
-    filename, dirPath, metadata = readMetadata()
+    metadata, filename, dirPath = readMetadata()
     
     # Loop for as many plots as user wants to build
     while True:
