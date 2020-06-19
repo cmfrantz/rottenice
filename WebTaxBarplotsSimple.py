@@ -44,6 +44,8 @@ Dependencies Install:
     pip install matplotlib
     pip install math
 
+You will also need to have RottenIceModules.py downloaded to the same \
+    directory as this script as it contains modules that this script calls.
 
 Copyright (C) 2020  Carie M. Frantz
 
@@ -79,6 +81,8 @@ from bokeh.io import output_file, show, export_svgs
 from bokeh.layouts import row
 from bokeh.plotting import figure
 from bokeh.models import Legend, LegendItem, Panel, Tabs
+
+import RottenIceModules
 
 
 ####################
@@ -130,78 +134,6 @@ displayprops = {
 # FUNCTIONS
 ####################
 
-def getFile():
-    '''Gets OTU table file from user input'''
-    # Import csv file (remove extra headers)
-    root=Tk()
-    filename=filedialog.askopenfilename(initialdir="/",
-                                        title = 'Select OTU Table CSV',
-                                        filetypes = [('CSV', '*.csv')])
-    root.destroy()
-    return filename
-
-
-def readFile(filename):
-    '''Reads in and formats the OTU table'''
-    
-    # Read in and format the table
-    print('Loading file...')
-    data = pd.read_csv(filename, header = sample_row,
-                       index_col = OTU_col, sep=',')
-    # Get sample list
-    samples = list(data.columns)[0:-1]
-    
-    # Delete any rows that have zero count
-    mat = data[(data[samples] != 0).all(axis=1)]
-    mat = data[samples]
-    mat = mat[(mat.T != 0).any()]
-    keepind = list(mat.index)
-    data = data.loc[keepind]
-    
-    # Format taxonomy list to read better
-    for i in np.arange(15):
-        delstr = 'D_'+str(i)+'__'
-        data.loc[:,'taxonomy'] = data['taxonomy'].str.replace(delstr, '')    
-    
-    # Break listed taxonomy into taxonomy at each taxonomic level
-    taxlist = genTaxlist(data['taxonomy'])
-    bar = Bar('Parsing taxonomy...', max = len(taxlist)) # Progress bar
-    for value in taxlist:
-        splitlist=[value]
-        # Get list of levels
-        if '; __' in value:
-            splitlist = value.split('; __')
-        if '; ' in value:
-            splitlist = value.split('; ')
-        # Fix last level if needed
-        if splitlist[-1]:
-            if splitlist[-1][-1] == ';':
-                splitlist[-1] = splitlist[-1][0:-1]
-        else: splitlist = splitlist[0:-1]
-        # Fill in taxonomy value at each level    
-        for i in np.arange(len(splitlist)):
-            data.loc[data['taxonomy']==value, 'L'+str(i+1)] = splitlist[i]
-        bar.next()  # Advance progress bar
-    bar.finish()    # Stop progress bar
-    
-    # Get rid of nans in taxonomy levels
-    cols = levelCols(max_level)
-    data.loc[:, cols] = data[cols].replace(np.nan, '')
-    
-    return data, samples
-
-
-def genTaxlist(tax_vals):
-    '''Returns the unique taxonomic assignments in a taxonomy list'''
-    taxlist = list(set(tax_vals))
-    taxlist.sort()
-    return taxlist
-
-
-def levelCols(lmax):
-    '''Generates the set of column names for all levels up to a given level'''
-    cols = ['L' + str(i) for i in np.arange(1,lmax+1)]
-    return cols
 
 
 # Generate the data to use in the plots
@@ -244,15 +176,6 @@ def genPltDict(data, samples):
             pltdata[value] = list(np.sum(mat, axis=0))
      
     return pltdata
-
-
-def genColormap(n, cmap):
-    '''Generate the set of colors to use for the plot'''
-    colormap = plt.get_cmap(cmap)
-    colorset = colormap(np.linspace(0,1,n))
-    colors=[]
-    for color in colorset: colors.append(matplotlib.colors.rgb2hex(color))
-    return colors
 
 
 def buildPlot(pltdata, samples, level, colors, pltkey, legend=False):
@@ -324,7 +247,8 @@ def genLegend(taxlist, vbars):
 if __name__ == '__main__':
     
     # Get and format file
-    filename = getFile()
+    filename, filepath, data = RottenIceModules.fileGet('Select OTU table file')
+    data, samples = RottenIceModules.formatOTUtableData(data, max_level = max_level)
     [data, samples] = readFile(filename)
           
     # Get the colors (disable to use default colors)
