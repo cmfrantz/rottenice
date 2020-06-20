@@ -57,10 +57,13 @@ from progress.bar import Bar
 
 import numpy as np
 import pandas as pd
-import matplotlib as plt
+import matplotlib.pyplot as plt
+from matplotlib import cm
 import math
+import itertools
 
-from bokeh.io import output_file, show, export_svgs
+from bokeh.io import export_svgs
+from bokeh.models import Legend, LegendItem
 from bokeh.plotting import figure
 
 ####################
@@ -138,18 +141,91 @@ def buildBarPlot(plt_data, colorlist, y_max, filename, title='',
     
     # Add legend
     if legend == True:
-        legend = genLegend(taxlist, vbars)
-        p.add_layout(legend, 'right')                                           # Figure out genLegend
+        legenditems = []
+        # Create a legend item for each taxon
+        for i in np.arange(len(taxlist)):
+            legenditems.append(LegendItem(label = taxlist[i],
+                                          renderers = [vbars[i]]))
+        # Build the legend from the legend items    
+        legend = Legend(items = legenditems, location = 'top_right', 
+                        glyph_height = 15, glyph_width = 15,
+                        label_text_font_size = '9px',)
+        p.add_layout(legend, 'right')
         
     # Save figure
     p.output_backend = 'svg'
     export_svgs(p, filename)
     return p
+
+
+def genLegendOutside(taxlist, colors, keyvalht = 24, keytoppad = 40):
+    '''Draws a legend to add to the figure
+
+    Parameters
+    ----------
+    taxlist : list of str
+        List of taxa to put in the legend.
+    colors : list of str
+        List of colors corresponding to each taxon in taxlist.
+    keyvalht : int, optional
+        Size of the key color box in px. The default is 10.
+    keytoppad : int, optional
+        Padding at the top of the key box in px. The default is 40.
+
+    Returns
+    -------
+    l : TYPE
+        DESCRIPTION.
+
+    '''
+    # Generate dummy plot to hold legend
+    l = figure(height = len(taxlist) * keyvalht + keytoppad)
+    items = []
+    for i in np.arange(len(taxlist)):
+        items.append(l.square(1,1, size = 15, color = colors[i],
+                               legend_label = taxlist[i]))
     
+    # Add legend
+    l.legend.location = 'top_left'
+    l.legend.title = 'Key'
+    l.legend.label_text_font_size = '9px'
+    l.legend.spacing = 0
+    l.legend.margin = 0
+    
+    # Make everything else invisible
+    for item in items: item.visible=False
+    l.xaxis.visible = False
+    l.yaxis.visible = False
+    l.xgrid.visible = False
+    l.ygrid.visible = False
+    l.outline_line_width = 0
+        
+    return l
+
+
 
 def buildNavDiv(cmap):
     '''Generate the HTML header information that includes links to all of the   Fill in
         HTML pages generated for this project'''
+
+
+def buildPlotDicts(data, level, samples):
+    '''Processes raw data to produce two datasets:
+        - raw counts (absolute data)
+        - relative abundances (relative data)'''
+        
+    # Condense dataset to the selected 
+    data = condenseDataset(data, level, samples)
+    
+    # Create normalized data
+    normdata = data.copy()
+    for sample in samples:
+        normdata[sample] = normdata[sample].values/np.sum(normdata[sample])
+        
+    # Make dictionaries
+    abspltdict = df2Dict(data)
+    relpltdict = df2Dict(normdata)
+    return abspltdict, relpltdict
 
 
 def colorsFromCmap(n, cmap):
@@ -167,10 +243,10 @@ def colorsFromCmap(n, cmap):
     colors : list of str
         List of hex color codes for each item.
     '''
-    colormap = plt.get_cmap(cmap)
+    colormap = cm.get_cmap(cmap)
     colorset = colormap(np.linspace(0,1,n))
     colors=[]
-    for color in colorset: colors.append(plt.colors.rgb2hex(color))
+    for color in colorset: colors.append(cm.colors.rgb2hex(color))
     return colors         
 
     
@@ -300,6 +376,14 @@ def condenseDataset(data, level, samples):
             condData.loc[value, samples] = sums
                 
     return condData
+
+    
+# Stitch the dictionaries
+def df2Dict(data):
+    pltdata = {'samples' : data.columns}
+    for value in data.index:
+        pltdata[value] = data.loc[value].values
+    return pltdata
 
 
 def fileGet(title, directory = os.getcwd(), file_type = 'csv',
@@ -508,6 +592,47 @@ def genTaxName(taxcols):
     '''Generates combined taxonomy names from individual levels'''
     taxname = ['>'.join(list(taxcols.loc[i])) for i in list(taxcols.index)]
     return taxname
+
+
+def genSampleList(months, horizons, others, replicates = [],
+                  locations = ['CS']):
+    '''Generates a list of sample names using Rotten Ice Project sample codes
+
+    Parameters
+    ----------
+    months : list of str
+        Month codes to include. Options are 'M', 'JN', 'JY10', and 'JY11'.
+    horizons : list of str
+        Horizon codes to include, e.g., 'HT', 'HM', 'HB', 'IT', 'SW'.
+    others : list of str, optional
+        List of additional non-coded samples to include.
+    replicates : int or str (optional)
+        List of replicate codes. The default is [].
+    locations : list of str, optional
+        Location codes. The default is ['CS'].
+
+    Returns
+    -------
+    samplelist : list of str
+        List of sample names.
+    '''
+    samplelist = []
+    for location in locations:
+        for month in months:
+            # Format month code
+            if 'JY' in month:
+                monthcode = month
+            else:
+                monthcode = month + '-' + location
+            # Format horizon code
+            for horizon in horizons:
+                # Add replicates if sample names include them
+                if replicates:
+                    for replicate in replicates:
+                        samplelist.append(monthcode + '-' + horizon + '-' + str(replicate))
+                else:
+                    samplelist.append(monthcode + '-' + horizon)
+    return samplelist
 
 
 def getUnique(value_list):

@@ -62,36 +62,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
-
-
 ####################
 # IMPORTS
 ####################
-from tkinter import *
-from tkinter import filedialog
-from progress.bar import Bar
-
 import pandas as pd
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from math import pi
-
-from bokeh.io import output_file, show, export_svgs
-from bokeh.layouts import row
-from bokeh.plotting import figure
-from bokeh.models import Legend, LegendItem, Panel, Tabs
-
 import RottenIceModules
+from bokeh.io import output_file
+
+
 
 
 ####################
 # VARIABLES
 ####################
-
-# Input file variables
-sample_row = 0      # Row in ASV table files containing unique sample names
-OTU_col = 0         # Column in metadata file containing unique ASV names
 
 # Set the max taxonomic depth to plot (e.g., deepest meaningful level)
 max_level = 14
@@ -102,6 +86,34 @@ cmaptext = ''''Choose a colormap, e.g.,
 viridis, plasma, prism, nipy_spectral, jet, gist_earth, etc.
 See https://matplotlib.org/tutorials/colors/colormaps.html for a full list. 
 > '''
+
+
+
+#%%
+
+####################
+# IMPORTS
+####################
+import matplotlib
+import matplotlib.pyplot as plt
+from math import pi
+
+from bokeh.io import output_file, show, export_svgs
+from bokeh.layouts import row
+from bokeh.plotting import figure
+from bokeh.models import Legend, LegendItem, Panel, Tabs
+
+
+
+
+####################
+# VARIABLES
+####################
+
+# Input file variables
+sample_row = 0      # Row in ASV table files containing unique sample names
+OTU_col = 0         # Column in metadata file containing unique ASV names
+
 
 # Plot formatting
 pltht = 380         # height of the actual plot
@@ -136,46 +148,7 @@ displayprops = {
 
 
 
-# Generate the data to use in the plots
-def genPltdata(data, level, samples):
-    '''Processes raw data to produce two datasets:
-        - raw counts (absolute data)
-        - relative abundances (relative data)'''
-      
-    # Reset taxonomic ID based on the selected level
-    cols = levelCols(level)
-    #taxlist = data['taxonomy'].values
-    for val in list(data.index):
-        #taxlist[i] = '>'.join(list(data.iloc[i][cols]))
-        data.at[val, 'taxonomy'] = '>'.join(list(data.loc[val][cols]))
-    
-    # Create normalized data
-    normdata = data.copy()
-    for sample in samples:
-        normdata[sample] = normdata[sample].values/np.sum(normdata[sample])
-    
-    # Save data dicts
-    pltdata = genPltDict(data, samples)
-    normpltdata = genPltDict(normdata, samples)
-        
-    return pltdata, normpltdata
 
-
-# Create dict for plot
-def genPltDict(data, samples):
-    '''Builds dictionaries to hold the data and settings for each plot'''
-    pltdata = {'samples' : samples}
-    
-    taxlist = genTaxlist(data['taxonomy'].values)
-    for value in taxlist:
-        rows = data.loc[data['taxonomy']==value]
-        if rows.shape[0] == 1:
-            pltdata[value] = list(rows[samples].to_numpy()[0])
-        else:
-            mat = rows[samples].to_numpy()
-            pltdata[value] = list(np.sum(mat, axis=0))
-     
-    return pltdata
 
 
 def buildPlot(pltdata, samples, level, colors, pltkey, legend=False):
@@ -224,19 +197,6 @@ def buildPlot(pltdata, samples, level, colors, pltkey, legend=False):
                                + str(level) + '.svg'))
     return p
 
-
-def genLegend(taxlist, vbars):
-    '''Draws a legend'''
-    legenditems = []
-    # Create a legend item for each taxon
-    for i in np.arange(len(taxlist)):
-        legenditems.append(LegendItem(label = taxlist[i],
-                                      renderers = [vbars[i]]))
-    # Build the legend from the legend items    
-    legend = Legend(items = legenditems, location = 'top_right', 
-                    glyph_height = 15, glyph_width = 15,
-                    label_text_font_size = '9px',)
-    return legend
 #%%
 
 ####################
@@ -250,6 +210,8 @@ if __name__ == '__main__':
         'Select OTU table file')
     data, samples = RottenIceModules.formatOTUtableData(
         data, max_level = max_level)
+    
+    # maxval = np.max(sum(data))
           
     # Get the colors (disable to use default colors)
     # cmap = input(cmaptext)
@@ -258,20 +220,32 @@ if __name__ == '__main__':
     tabs = []
     for level in np.arange(1,max_level+1):
         print('Generating Level ' + str(level) + ' plot...')
-        [pltdata, normpltdata] = genPltdata(data, level, samples)
+        # Prepare the data
+        pltdata, normpltdata = RottenIceModules.buildPlotDicts(
+            data, level, samples)
+        colors = RottenIceModules.colorsFromCmap(len(pltdata)-1, cmap)
         
-        # Plot the data
-        output_file(filename[0:-4] + '_barplots_L' + str(level) + '_' + cmap
-                    +'.html', title = filename[0:-4] + ' barplots')
-        colors = genColormap(len(pltdata)-1, cmap)
-        lplt = buildPlot(pltdata, samples, level, colors, 'L')
-        rplt = buildPlot(normpltdata, samples, level, colors, 'R')
+        # Generate filenames
+        leveltext = 'L' + str(level)
+        filepfx = filename[0:-4] + '_barplots_' + leveltext + '_' + cmap
+        output_file(filepfx +'.html', title = filename[0:-4] + ' barplots')
+        
+        # Create plots
+        lplt = RottenIceModules.buildBarPlot(
+            pltdata, colors, y_max, filepfx,
+            title = filename[0:-4] + '_' + leveltext + '_abs'
+            y_label = 'Phytoplankton counts (cells/ml)', legend = False,
+                 figoptions={})
+        rplt = RottenIceModules.buildBarPlot(
+            normpltdata, colors, 1, filepfx,
+            title = filename[0:-4] + '_' + leveltext + '_rel'
+            y_label = 'Relative abundance', legend = True,
+                 figoptions={})
         grid = row(lplt, rplt)
         
         # Enable this for troubleshooting to display individual plots,
         # but tabs won't stitch together into HTML file if it is enabled.
         # show(grid)
-        
         # Create the tab
         panel = Panel(child = row(lplt, rplt), title = 'Level ' + str(level))
         tabs.append(panel)
