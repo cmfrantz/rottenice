@@ -28,6 +28,7 @@ Dependencies Install:
     pip install pandas
     pip install matplotlib
     pip install math
+    pip install bokeh
 
 
 Copyright (C) 2020  Carie M. Frantz
@@ -57,24 +58,24 @@ from progress.bar import Bar
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib import cm
 import math
-import itertools
 
 from bokeh.io import export_svgs
-from bokeh.models import Legend, LegendItem
+from bokeh.models import Legend, LegendItem, Div
 from bokeh.plotting import figure
+
+import RottenIceVars
 
 ####################
 # FUNCTIONS
 ####################
 # Listed alphabetically by name
 
-def buildBarPlot(plt_data, colorlist, y_max, filename, title='',
-                 y_label = 'Abundance', invert = False,
-                 show_x_ax = True, legend = False,
-                 figoptions={}):
+def buildBarPlot(plt_data, colorlist, y_max, save_image = False,
+                 filename='bar', invert = False,
+                 show_x_ax = True, x_range = [],
+                 legend = False, **kwargs):
     '''Builds a bokeh interactive bar plot of taxonomy data
 
     Parameters
@@ -87,25 +88,27 @@ def buildBarPlot(plt_data, colorlist, y_max, filename, title='',
     colorlist : list of tuples
         List of colors to use for each bar. Length of colorlist should be \
             the same as the number of taxonomic values in the passed dict.
-    filename : str
-        String filepath + filename to save svg image of barplot.
-    y_label : str, optional)
-        String to use for the y-axis label. The default is 'Abundance'.
     y_max : float or int
-        Y axis maximum value. Use 1 for relative abundance plots. \
-            determines it automatically from the data.
-    title : str, optional
-        Plot title. The default is ''.
+        Y axis maximum value. Use 1 for relative abundance plots.
+    save_image: boolean, optional
+        If true, a png snapshot of the bar plot is saved.
+        If false, no snapshot is saved.
+    filename : str, optional
+        String filepath + filename prefix to use when saving barplot png image
     invert : Boolean, optional
         If invert is true, the plot will be mirrored (upside-down). \
             The default is False.
     show_x_ax : Boolean, optional
         Whether or not to display the x axis labels. The default is True.
+    x_range : bokeh.models.FactorRange, optional
+        Bokeh range object that manually sets the range label.
+        The default is [], which assumes that the x range should be the same \
+            as the data columns (samples).
     legend: Boolean, optional
         Whether or not to display a figure legend. The default is False.
-    figoptions : dict, optional
+    kwargs : dict, optional
         Dictionary containing optional figure formatting options for \
-            bokeh.figure. The default is {}.
+            bokeh.figure.
 
     Returns
     -------
@@ -113,14 +116,30 @@ def buildBarPlot(plt_data, colorlist, y_max, filename, title='',
         Bokeh figure object containing the plot.
 
     '''
+    # Update plot properties kwargs
+    title = 'bar'
+    if x_range:
+        plot_formatting_args = {'x_range' : x_range}
+    else:
+        plot_formatting_args = {'x_range' : plt_data['samples']}
+    if kwargs:
+        if 'title' in list(kwargs):
+            title = kwargs['title']
+        kwargs.update(plot_formatting_args)
+    else:
+        kwargs = plot_formatting_args
+    
     # Create figure
+
     print('Building ' + title + ' plot...')
-    p = figure(**figoptions)
+    p = figure(**kwargs)
     
     # Add bars corresponding to each taxon
-    taxlist = list(plt_data)[1:]
-    vbars = p.vbar_stack(taxlist, x = 'samples', width = 0.9, color = colorlist,
-                 source = plt_data)
+    taxlist = list(plt_data)
+    taxlist.remove('samples')
+    vbars = p.vbar_stack(
+        taxlist, x = 'samples', width = 0.9, color = colorlist,
+        source = plt_data)
     
     # Set y axis scale
     if invert == False:
@@ -153,79 +172,102 @@ def buildBarPlot(plt_data, colorlist, y_max, filename, title='',
         p.add_layout(legend, 'right')
         
     # Save figure
-    p.output_backend = 'svg'
-    export_svgs(p, filename)
+    if save_image:
+        p.output_backend = 'svg'
+        export_svgs(p, filename = 'barplot_' + title + '.svg')
+        
     return p
 
 
-def genLegendOutside(taxlist, colors, keyvalht = 24, keytoppad = 40):
-    '''Draws a legend to add to the figure
+def buildBokehNavDiv(page_title, subtitle_text, local_nav_html):
+    '''Builds header div for bokeh web plots
 
     Parameters
     ----------
-    taxlist : list of str
-        List of taxa to put in the legend.
-    colors : list of str
-        List of colors corresponding to each taxon in taxlist.
-    keyvalht : int, optional
-        Size of the key color box in px. The default is 10.
-    keytoppad : int, optional
-        Padding at the top of the key box in px. The default is 40.
+    page_title : str
+        Title to use for the page header
+    subtitle_text : str
+        Text (including any html formatting) to be used for the subtitle \
+            paragraph. It will be wrapped in <p>subtitle_text</p>.
+    local_nav_html: str
+        HTML to be used for navigating between same-type plots \
+            (e.g. pages of plots at different taxonomic levels). \
+                It will be wrapped in <p>local_nav_html</p>.
 
     Returns
     -------
-    l : TYPE
-        DESCRIPTION.
+    header_div : bokeh.models.Div
+        Div class containing the header html for a bokeh page.
+    '''
+    html_nav_head = RottenIceVars.html_head
+    html_page_head = '<h1>' + page_title + '</h1>'
+    html_page_nav = '<p><b>Plot navigation: </b>' + local_nav_html + '</p>'
+    html_subtitle = '<p>' + subtitle_text + '</p>'
+    header_div = Div(text = html_nav_head + html_page_head
+                     + html_page_nav + html_subtitle)
+    return header_div
+    
+    
+    
+def buildPlotDicts(data, level, samples, colormap):
+    '''Processes raw data to produce two datasets and a mapped color list:
+        - raw counts (absolute data)
+        - relative abundances (relative data)
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        DataFrame of OTU table. Should contain each sample as a column as \
+            well as broken out taxa columns. Each row is a unique OTU ID.
+    level : int
+        Taxonomic level for the plot
+    samples: list of str
+        Samples to include in the plot
+    colormap: pandas.DataFrame
+        Dataframe mapping colors to taxonomic calls generated by \
+            colorMap2Tax. Indices of colormap and data should match.
+
+    Returns
+    -------
+    abspltdict : dict
+        Dictionary containing each taxonomic ID as keys and lists of counts \
+            for each sample as values. Also contains the key 'sample' with \
+                a list of sample names.
+    relpltdict : dict
+        Dictionary containing each taxonomic ID as keys and lists of \
+            normalized counts for each sample as values. Also contains the \
+                key 'sample' with a list of sample names.
+    colorlist : list of str
+        List of color values corresponding to each dictionary key.
 
     '''
-    # Generate dummy plot to hold legend
-    l = figure(height = len(taxlist) * keyvalht + keytoppad)
-    items = []
-    for i in np.arange(len(taxlist)):
-        items.append(l.square(1,1, size = 15, color = colors[i],
-                               legend_label = taxlist[i]))
-    
-    # Add legend
-    l.legend.location = 'top_left'
-    l.legend.title = 'Key'
-    l.legend.label_text_font_size = '9px'
-    l.legend.spacing = 0
-    l.legend.margin = 0
-    
-    # Make everything else invisible
-    for item in items: item.visible=False
-    l.xaxis.visible = False
-    l.yaxis.visible = False
-    l.xgrid.visible = False
-    l.ygrid.visible = False
-    l.outline_line_width = 0
         
-    return l
-
-
-
-def buildNavDiv(cmap):
-    '''Generate the HTML header information that includes links to all of the   Fill in
-        HTML pages generated for this project'''
-
-
-def buildPlotDicts(data, level, samples):
-    '''Processes raw data to produce two datasets:
-        - raw counts (absolute data)
-        - relative abundances (relative data)'''
-        
-    # Condense dataset to the selected 
+    # Map taxonomy names to colormap
+    colors = colormap.loc[data.index, 'color-L' + str(level)]
+    cols = levelCols(level)
+    taxnames = genTaxName(data[cols])
+    colors.index = taxnames
+    
+    # Condense dataset to the selected level
     data = condenseDataset(data, level, samples)
-    
+    data = data.fillna(0)
     # Create normalized data
     normdata = data.copy()
     for sample in samples:
         normdata[sample] = normdata[sample].values/np.sum(normdata[sample])
-        
+    
+    # Make color list
+    colorlist = []
+    for taxgroup in data.index:
+        if isinstance(colors.loc[taxgroup], str):
+            colorlist = colorlist + [colors.loc[taxgroup]]
+        else:
+            colorlist = colorlist + [list(colors.loc[taxgroup])[0]]
+    
     # Make dictionaries
     abspltdict = df2Dict(data)
     relpltdict = df2Dict(normdata)
-    return abspltdict, relpltdict
+    return abspltdict, relpltdict, colorlist
 
 
 def colorsFromCmap(n, cmap):
@@ -250,18 +292,19 @@ def colorsFromCmap(n, cmap):
     return colors         
 
     
-def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
+def colorMap2Tax(tax_set, max_level, cmap = RottenIceVars.cmap):
     '''This function maps colors to taxonomy values for plots. \
         Doing this keeps colors consistent across levels for taxonomic groups.   
 
     Parameters
     ----------
-    taxset : pandas.DataFrame
-        Full taxonomy breakdown matrix with levels broken out.
+    tax_set : pandas.DataFrame
+        Full set of taxonomic data including taxonomy breakdown matrix \
+            with levels broken out.
     cmap : str
        The matplotlib colormap name to use for picking colors.
-    max_level : int or 'Auto', optional
-        The maximum taxonomic level to consider. The default is 'Auto'.
+    max_level : int
+        The maximum taxonomic level to consider.
 
     Returns
     -------
@@ -273,14 +316,15 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     
     colnames = ['color-' + col for col in cols_all]
     for c in colnames:
-        taxset[c] = ''
+        tax_set[c] = ''
     
     # Find the greatest level with <= 256 unique values
     print('Finding level to use as colormap index...')
     uniques=[]
     for level in np.arange(1, max_level+1):
         cols_sub = levelCols(level)
-        uniquetax = getUnique(taxset[cols_sub])
+        tax_names = genTaxName(tax_set[cols_sub])
+        uniquetax = getUnique(tax_names)
         uniques.append(uniquetax)
         if len(uniquetax) > 256: break
     cmaplevel = level-1
@@ -288,7 +332,7 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     # Generate colors for each OTU at the highest taxonomic level
     # Generate tax names for each group at the level
     cols_clevel = levelCols(cmaplevel)
-    uniquetax = getUnique(genTaxName(taxset[cols_clevel]))
+    uniquetax = getUnique(genTaxName(tax_set[cols_clevel]))
     print('Using Level ' + str(cmaplevel) + ' for colormap index ('
           + str(len(uniquetax)) + ' unique values)')
     uniquetax.sort()
@@ -296,13 +340,13 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     colordict = dict(zip(uniquetax, colorlist))
     
     # Fill in the values for the max level and all lower levels
-    taxset['taxonomy'] = genTaxName(taxset[cols_clevel])
+    tax_set.loc[:, 'taxonomy'] = genTaxName(tax_set[cols_clevel])
     cols_low = np.setdiff1d(levelCols(max_level), levelCols(cmaplevel-1))
     print('Assigning colors to L' + str(cmaplevel) + '-L'
           + str(max_level) + '...')
     cols_low_clr = ['color-' + col for col in cols_low]
-    for i in list(taxset.index):
-        taxset.loc[i][cols_low_clr] = colordict[taxset.loc[i]['taxonomy']]
+    for i in list(tax_set.index):
+        tax_set.loc[i, cols_low_clr] = colordict[tax_set.loc[i, 'taxonomy']]
     
     # Fill in the values for the higher levels
     print('Assigning colors to L1-L' + str(cmaplevel-1))
@@ -310,24 +354,24 @@ def colorMap2Tax(taxset, cmap, max_level = 'Auto'):
     # At each level, pick the mid value for each set.
     for level in range(cmaplevel-1, 0, -1):
         cols_sub = levelCols(level)
-        taxlist = genTaxName(taxset[cols_sub])
-        # Get unique list of tax values at this level
+        taxlist = genTaxName(tax_set[cols_sub])
         # Loop through each unique value
         for taxval in uniques[level-1]:
             # Find all color values in the next level belonging to this
             # taxonomic set
             rows = [i for i in np.arange(len(taxlist))
                     if taxlist[i] == taxval]
-            colorlist = list(
-                taxset.iloc[rows]['color-L' + str(level+1)].values)
+            colorlist = tax_set.iloc[rows]['color-L' + str(level+1)]
             # Determine the middle color
-            midclr = colorlist[int(len(colorlist)/2)]
+            if len(colorlist) == 1:
+                midclr = colorlist[0]
+            else: midclr = colorlist[int(len(colorlist)/2)]
             # Assign this color to all with this tax value
-            taxset.iloc[rows, max_level + level-1] = midclr
+            tax_set.loc[colorlist.index, 'color-L' + str(level)] = midclr
             
     # Return the colormap
     cols_all_clr = ['color-L' + str(i) for i in np.arange(1,max_level+1)]        
-    colormap = taxset[cols_all_clr]
+    colormap = tax_set[cols_all_clr]
     return colormap   
 
 
@@ -380,20 +424,23 @@ def condenseDataset(data, level, samples):
     
 # Stitch the dictionaries
 def df2Dict(data):
-    pltdata = {'samples' : data.columns}
+    pltdata = {'samples' : data.columns.values}
     for value in data.index:
         pltdata[value] = data.loc[value].values
     return pltdata
 
 
-def fileGet(title, directory = os.getcwd(), file_type = 'csv',
-            header_row = 0, index_col = 0):
+def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
+            file_type = 'csv', header_row = 0, index_col = 0):
     '''This script imports data from a file chosen with a user input GUI.
     
     Parameters
     ----------
     title : str
         Text to put in the user input window.
+    tabletype: str
+        Type of table to input.
+        Options are 'Generic' (default), 'metadata', and 'OTU-table'.
     directory : str, optional
         The start directory to search in. The default is os.getcwd().
     file_type : str, optional
@@ -414,6 +461,16 @@ def fileGet(title, directory = os.getcwd(), file_type = 'csv',
     data : pandas.DataFrame
         DataFrame containing the indexed data read in from the file.
     '''
+    
+    # If type of file is specified, use the proper format
+    if tabletype == 'metadata':
+        header_row = RottenIceVars.metadata_head_row
+        index_col = RottenIceVars.metadata_index_col
+        file_type = RottenIceVars.metadata_filetype
+    elif tabletype == 'OTU-table':
+        header_row = RottenIceVars.OTU_table_head_row
+        index_col = RottenIceVars.metadata_index_col
+        file_type = RottenIceVars.metadata_filetype
     
     # Define filetypes
     if file_type == 'csv':
@@ -438,7 +495,7 @@ def fileGet(title, directory = os.getcwd(), file_type = 'csv',
     return filename, dirPath, data
 
 
-def findAbundantTaxa(datasets, samples, fcutoff = 0.1, maxtaxa = 100):
+def findAbundantTaxa(datasets, samples, fcutoff = 0.1, max_taxa = 100):
     '''This script identifies the limited set of most abundant taxa to \
         include in downstream analysis (e.g., bar plots) from ASV tables of \
             sequence results of the same gene with the same samples \
@@ -459,7 +516,7 @@ def findAbundantTaxa(datasets, samples, fcutoff = 0.1, maxtaxa = 100):
         If any taxa is greater than this value in abundance in any sample, \
             it will be included. Default is 0.1 (10%).
             
-    maxtaxa : int (optional)
+    max_taxa : int (optional)
         The maximum number of abundant taxa to return.
 
     Returns
@@ -484,35 +541,42 @@ def findAbundantTaxa(datasets, samples, fcutoff = 0.1, maxtaxa = 100):
         
         # Find the most abundant ASVs
         print('Finding most abundant ASVs..')
-        n = maxtaxa - len(rows)
+        n = max_taxa - len(rows)
         dataset['totals'] = np.sum(dataset[samples], axis = 1)
         dataset = dataset.sort_values('totals', ascending = False)
         rows = rows + list(dataset.iloc[0:n].index)
         abundantTaxa.append(dataset.loc[rows,'taxonomy'])
+        
+    # Get unique values in the list
+    abundantTaxa = [taxon for taxset in abundantTaxa for taxon in taxset]
+    abundantTaxa = getUnique(abundantTaxa)
+    
     return abundantTaxa
                 
 
-def findMaxAxVal(maxval, minticks, minstepsize):
+def findMaxAxVal(max_val, min_ticks = 2):
     '''Find a maximum value for an axis that is rounded to the nearest whole \
         step for plot ticks
     
     Parameters
     ----------
-    maxval : float
+    max_val : float
         Maximum value of the data.
+    min_ticks : int, optional
+        Minimum number of ticks. Default is 2.
 
     Returns
     -------
-    maxtickval : float
+    max_ax_val : float
         Max value for the axis.
     '''
-    minstepsize = maxval/minticks
-    logval = math.floor(math.log10(minstepsize))
-    maxaxval = minticks * math.ceil(minstepsize/10**logval)*10**logval
-    return maxaxval
+    min_step_size = max_val/min_ticks
+    log_val = math.floor(math.log10(min_step_size))
+    max_ax_val = min_ticks * math.ceil(min_step_size/10**log_val)*10**log_val
+    return max_ax_val
 
 
-def formatOTUtableData(OTU_table, max_level = 14, taxReassignList = []):
+def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
     '''This script reads in and formats an imported raw ASV table by adding \
         taxonomy data.
 
@@ -525,7 +589,7 @@ def formatOTUtableData(OTU_table, max_level = 14, taxReassignList = []):
     max_level : int (optional)
         This is the maximum taxonomic level present in the dataset. \
             The default is 14 (i.e., 'D_14__').
-    taxReassignList : dict (optional)
+    tax_reassign_list : dict (optional)
         List of taxonomic names in the dataset with the values they should \
             be reassigned. The default is none.
 
@@ -541,11 +605,11 @@ def formatOTUtableData(OTU_table, max_level = 14, taxReassignList = []):
     # Get sample list
     samples = list(OTU_table.columns)[0:-1]
        
-    # Reclassify any values with assignments in the taxReassignList
-    if taxReassignList:
-        for val in list(taxReassignList):
+    # Reclassify any values with assignments in the tax_reassign_list
+    if tax_reassign_list:
+        for val in list(tax_reassign_list):
             OTU_table.loc[OTU_table['taxonomy']==val,
-                          'taxonomy'] = taxReassignList[val]
+                          'taxonomy'] = tax_reassign_list[val]
     
     # Format taxonomy list to read better
     print('Formatting taxonomy...')
@@ -562,7 +626,7 @@ def formatOTUtableData(OTU_table, max_level = 14, taxReassignList = []):
         # Get list of levels
         if '; __' in value:
             splitlist = value.split('; __')
-        if '; ' in value:
+        elif '; ' in value:
             splitlist = value.split('; ')
         # Fix last level if needed
         if splitlist[-1]:
@@ -588,13 +652,117 @@ def formatOTUtableData(OTU_table, max_level = 14, taxReassignList = []):
     return OTU_table, samples
 
 
+def genFilenamesByLevel(filename_prefix, max_level, filename_suffix = '',
+                       cmap = '', filetype = ''):
+    '''Generates a set of filenames up to a given taxonomic level'''
+    # Generate the filename suffix
+    if len(filename_suffix) > 0:
+        filename_suffix = '_' + filename_suffix
+    if len(cmap) > 0:
+        filename_suffix = cmap + filename_suffix
+    if len(filetype) > 0:
+        filename_suffix = filename_suffix + '.' + filetype
+    # Generate list of filenames
+    filenames = []
+    for level in range(1, max_level + 1):
+        filenames.append(filename_prefix + '_L' + str(level)
+                         + '_' + filename_suffix)
+    return filenames
+
+
+def genLegendOutside(taxlist, colors, key_val_ht = 24, key_top_pad = 40):
+    '''Draws a legend to add to the figure
+
+    Parameters
+    ----------
+    taxlist : list of str
+        List of taxa to put in the legend.
+    colors : list of str
+        List of colors corresponding to each taxon in taxlist.
+    keyvalht : int, optional
+        Size of the key color box in px. The default is 10.
+    keytoppad : int, optional
+        Padding at the top of the key box in px. The default is 40.
+
+    Returns
+    -------
+    l : TYPE
+        DESCRIPTION.
+
+    '''
+    # Generate dummy plot to hold legend
+    l = figure(height = len(taxlist) * key_val_ht + key_top_pad)
+    items = []
+    for i in np.arange(len(taxlist)):
+        items.append(l.square(1,1, size = 15, color = colors[i],
+                               legend_label = taxlist[i]))
+    
+    # Add legend
+    l.legend.location = 'top_left'
+    l.legend.title = 'Key'
+    l.legend.label_text_font_size = '9px'
+    l.legend.spacing = 0
+    l.legend.margin = 0
+    
+    # Make everything else invisible
+    for item in items: item.visible=False
+    l.xaxis.visible = False
+    l.yaxis.visible = False
+    l.xgrid.visible = False
+    l.ygrid.visible = False
+    l.outline_line_width = 0
+        
+    return l
+
+
+def genMarkerKwargs(samplename):
+    '''Generates the kwargs for formatting scatterplot markers'''
+    month, fraction = metadataFromSamplename(samplename)
+    kwargs = {
+        'color'     : RottenIceVars.plotColorsByMonth[month],
+        'marker'    : RottenIceVars.plotMarkersByFraction[fraction],
+        }
+    if RottenIceVars.plotMarkerBorderByMonth[month] == True:
+        kwargs.update(RottenIceVars.plotMarkerLineProperties)
+    return kwargs
+
+
+def genPlotNavHTML_Sets(filename_sets):
+    '''Generates plot navigation HTML from a set of filename prefix lists. \
+        Each list has filenames corresponding to each level for which plots \
+            were made. If there is only one set of files, \
+                (e.g., only algae data or only 16S data), \
+                    use genPlotNavHTML instead.'''
+    nav_html = RottenIceVars.nav_html_start
+    crop = len(nav_html)
+    for file_set in filename_sets:
+        set_pfx = '  <em>' + file_set + ': </em>'
+        set_html = genPlotNavHTML(filename_sets[file_set])
+        nav_html = nav_html + set_pfx + set_html[crop:] + '  //  '
+    nav_html = nav_html[:-6]
+    return nav_html
+    
+    
+def genPlotNavHTML(filenames):
+    '''Generates plot navigation HTML from a list of filename prefixes \
+        corresponding to each level for which plots were made. \
+            If there are multiple sets of files (e.g., 16S & 18S data), \
+                use genPlotNavHTML_Sets instead. '''
+    nav_html = RottenIceVars.nav_html_start
+    for i, filename in enumerate(filenames):
+        nav_html = (nav_html + ' <a href = "' + filename + '.html">'
+                    + 'L' + str(i+1) + '</a>  /')
+    nav_html = nav_html[:-3]
+    return nav_html
+
+    
 def genTaxName(taxcols):
     '''Generates combined taxonomy names from individual levels'''
     taxname = ['>'.join(list(taxcols.loc[i])) for i in list(taxcols.index)]
     return taxname
 
 
-def genSampleList(months, horizons, others, replicates = [],
+def genSampleList(months, fractions, others = [], replicates = [],
                   locations = ['CS']):
     '''Generates a list of sample names using Rotten Ice Project sample codes
 
@@ -605,7 +773,7 @@ def genSampleList(months, horizons, others, replicates = [],
     horizons : list of str
         Horizon codes to include, e.g., 'HT', 'HM', 'HB', 'IT', 'SW'.
     others : list of str, optional
-        List of additional non-coded samples to include.
+        List of additional non-coded samples to include. The default is [].
     replicates : int or str (optional)
         List of replicate codes. The default is [].
     locations : list of str, optional
@@ -617,6 +785,7 @@ def genSampleList(months, horizons, others, replicates = [],
         List of sample names.
     '''
     samplelist = []
+    # Loop through locations, months, fractions, and replicates
     for location in locations:
         for month in months:
             # Format month code
@@ -625,14 +794,42 @@ def genSampleList(months, horizons, others, replicates = [],
             else:
                 monthcode = month + '-' + location
             # Format horizon code
-            for horizon in horizons:
+            for fraction in fractions:
                 # Add replicates if sample names include them
                 if replicates:
                     for replicate in replicates:
-                        samplelist.append(monthcode + '-' + horizon + '-' + str(replicate))
+                        samplelist.append(monthcode + '-' + fraction + '-' + str(replicate))
                 else:
-                    samplelist.append(monthcode + '-' + horizon)
+                    samplelist.append(monthcode + '-' + fraction)
+    # Add others to the end
+    if others:
+        samplelist = samplelist + others
     return samplelist
+
+
+def genSampleName(month, fraction, location = ['CS'], replicate = []):
+    'Generates sample name from sample metadata'
+    if 'JY' in month:
+        loccode = month
+    else:
+        loccode = month + '-' + location
+    if replicate:
+        samplename = loccode + '-' + fraction + '-' + replicate
+    else:
+        samplename = loccode + '-' + fraction
+    return samplename
+
+
+def genSamples_w_Markers(months, fractions):
+    '''Generates a list of samples and list of marker properties for each \
+        sample from a list of months and fractions being plotted.'''
+    samplelist = genSampleList(months, fractions)
+    markers = []
+    for sample in samplelist:
+        kwargs = genMarkerKwargs(sample)
+        kwargs.update({'alpha': 0.8})
+        markers.append(kwargs)
+    return samplelist, markers
 
 
 def getUnique(value_list):
@@ -653,6 +850,44 @@ def getUnique(value_list):
     return uniques
 	
 
+def groupTaxa(data_table, focusTaxa):
+    '''Merge taxa into new groups based on the focus taxa and "others"'''
+    data = data_table.copy()
+    excludedOthers = []
+    
+    # Loop through each level
+    bar = Bar('', max = 14) # Progress bar
+    for L in np.arange(1,15):
+        excludedOthers = excludedOthers + ['\nAssigning L' + str(L) + ':\n']
+        # Get full taxonomy of any taxonomic groups
+        #     with a taxonomic value at this level
+        # Find non-empty values in the taxonomy column for this level
+        indices = [i for i in data.index if data.loc[i]['L'+str(L)]]
+        # Generate taxonomy names at this level
+        data['taxonomy'] = genTaxName(data[levelCols(L)]) 
+        # Generate list of unique taxonomic names at this level                 
+        taxlist = getUnique(data.loc[indices]['taxonomy'])
+        # Remove any empty values
+        taxlist = list(filter(None, taxlist))                               
+        # If the list isn't empty...
+        if taxlist:
+            # Loop through each unique taxonomy name
+            for value in taxlist:
+                # Get the full taxonomic name for everything in the category
+                indices = [i for i in data.index
+                           if data.loc[i]['taxonomy']==value]
+                taxvals = np.unique(list(data_table.loc[indices, 'taxonomy']))
+                # If no items in the tax list are members of the focus taxa,
+                #   call all values 'other' for that level
+                if not any(item in taxvals for item in focusTaxa):
+                    excludedOthers = (
+                        excludedOthers + [str(val) for val in taxvals])
+                    data.loc[indices, 'L'+str(L)] = 'Other'
+                    data.loc[indices, 'L'+str(L+1):'L'+str(14)] = ''
+        bar.next()
+    bar.finish()
+    return data, excludedOthers
+
 
 def levelCols(lmax):
     ''''Generates the set of column names for all levels up to a given level
@@ -671,3 +906,26 @@ def levelCols(lmax):
     cols = ['L' + str(i) for i in np.arange(1,lmax+1)]
     return cols
 
+
+def metadataFromSamplename(samplename):
+	'''Determines the month and horizon from a sample name'''
+	breakout = samplename.split('-')
+	month = breakout[0]
+	if 'JY' in month:
+		fraction = breakout[1]
+	else:
+		fraction = breakout[2]
+	return month, fraction
+
+
+def plotMarkerPropertiesFromSamplelist(
+        samplelist, monthparams = RottenIceVars.plotColorsByMonth,
+        fractionparams = RottenIceVars.plotMarkersByFraction):
+	'''Determines the plot marker and marker color from the sample name'''
+	colors = []
+	markers = []
+	for sample in samplelist:
+		month, fraction = metadataFromSamplename(sample)
+		colors.append(RottenIceVars.plotColorsByMonth[month])
+		markers.append(RottenIceVars.plotMarkersByFraction[fraction])
+	return colors, markers
