@@ -73,7 +73,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 import numpy as np
 from bokeh.io import output_file, show
-from bokeh.layouts import row, column
+from bokeh.layouts import row
 
 import RottenIceModules
 import RottenIceVars
@@ -95,15 +95,15 @@ samples = ['M-CS-HT', 'M-CS-HM', 'M-CS-HB', 'M-CS-SW',
 
 # Plot / HTML file title info
 title = 'Phytoplankton taxonomy'
-subtitle_text = (
-    '''Rotten ice project phytoplankton taxonomic ID barplots.
-    Taxonomic IDs by Sylvie Lessard (2016).
-    Taxonomy breakdown done by B. Tattersall (2017) using the
-    <a href = "https://www.algaebase.org/AlgaeBase">AlgaeBase database</a>.
-    Data processed by C. Frantz, May 2020 from cleaned tables
-    (plausible swapped sample corrected) using the script
-    <a href="https://github.com/cmfrantz/rottenice">
-    WebTaxBarplotsSimple.py</a>.''')
+subtitle_text = ('Rotten ice project phytoplankton taxonomic ID barplots.'
+                 + 'Taxonomic IDs by Sylvie Lessard (2016).'
+                 + 'Taxonomy breakdown done by B. Tattersall (2017) using the'
+                 + '<a href = "https://www.algaebase.org/AlgaeBase">'
+                 + 'AlgaeBase database</a>.'
+                 + 'Data processed by C. Frantz, May 2020 from cleaned tables'
+                 + '(plausible swapped sample corrected) using the script'
+                 + '<a href="https://github.com/cmfrantz/rottenice">'
+                 + 'WebTaxBarplotsSimple.py</a>.')
     
 filename_prefix = RottenIceVars.file_sets['algae_barplots']['pfx']
 
@@ -205,12 +205,6 @@ if __name__ == '__main__':
         output_file(filenames[level-1] +'.html',
                     title = title + ' L' + str(level))
         
-        # Build header navigation div
-        subtitle = ('<b>Taxonomic level ' + str(level) + '</b> '
-                    + subtitle_text)
-        header_div = RottenIceModules.buildBokehNavDiv(
-            title, subtitle, nav_html)
-        
         # Create plots
         plots = []
         # Determine plot height
@@ -237,6 +231,14 @@ if __name__ == '__main__':
             plots.append(plt)
                   
         # Save page
-        grid = column([header_div, row(plots)])
+        grid = row(plots)
         print('Saving HTML file...')
         show(grid)
+        
+        # Add header to page
+        RottenIceModules.addHTMLhead(
+            filenames[level-1]+'.html',
+            page_title = title,
+            page_nav_html = nav_html,
+            subtitle_text = ('<b>Taxonomic level ' + str(level) + '</b><br />'
+                             + subtitle_text))

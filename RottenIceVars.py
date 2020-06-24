@@ -121,7 +121,7 @@ file_sets = {
         'land_page' : 'metadata_whiskerplots.html'},
     'algae_barplots'        : {
         'title'     : 'Phytoplankton ID bar plots',
-        'pfx'       : 'Phyto_ID_barplots',
+        'pfx'       : 'PhytoID_barplots',
         'land_page' : 'Algae/PhytoID_barplots_L1_viridis.html'},
     'ASV_barplots'          : {
         'title'     : 'Sequencing ASV bar plots',
