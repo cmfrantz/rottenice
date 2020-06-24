@@ -2,7 +2,7 @@
 Data processing python scripts used for the Rotten Ice project
 by Carie Frantz cariefrantz@weber.edu
 
-List of scripts:
+## List of scripts
 
 <table>
 <tr><th>Script</th><th>Description</th><th>Data files used</th></tr>
@@ -13,12 +13,55 @@ List of scripts:
 <tr><td>WebTaxBarplotsStacked.py</td><td>Used to generate interactive stacked bokeh taxonomic bar plots (web-based) from Illumina sequencing data. Plots for absolute and relative abundance for both DNA and cDNA are stacked for ease of comparison.</td><td>16S_DNA_ASV-table.csv, 16S_cDNA_ASV-table.csv, 18S_DNA_ASV-table.csv, 18S_cDNA_ASV-table.csv</td></tr>
 </table>
 
-To do:
+## Setting up
+The code for this project requires the following list of packages in order to run.
+<ul>
+<li>tkinter</li>
+<li>progress</li>
+<li>numpy</li>
+<li>pandas</li>
+<li>math</li>
+<li>scipy</li>
+<li>sklearn</li>
+<li>matplotlib</li>
+<li>bokeh</li>
+</ul>
+
+To install using conda, execute the command:
+
+	conda install tkinter
+	conda install progress
+	
+...and so on
+
+To install using pip, execute the command:
+
+	pip install tkinter
+	pip install progress
+	
+...and so on
+
+## To do
 
 <ul>
-<li>Add scripts for...
+<li>Test and add...
 	<ul>
 	<li>Clustermap</li>
+	<li>MetadataWhiskerPlots</li>
+	</ul>
+</li>
+<li>Update scripts to run using modules...
+	<ul>
+	<li>ChemDataPCA</li>
+	<li>ChemHeatmaps</li>
+	<li>SpearmanGrid</li>
+	<li>WebTaxBarplotsSimple</li>
+	<li>WebTaxBarplotsStacked</li>
+	</ul>
+</li>
+<li>Script-specific changes	
+	<ul>
+	<li>WebTaxBarplotsSimple: add grouping module</li>
 	</ul>
 </li>
 </ul>

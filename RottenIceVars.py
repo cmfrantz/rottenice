@@ -113,26 +113,35 @@ metadataFullTitle = {
     'CTC_pEPS'      : 'Ratio of %CTC to pEPS'
     }
 
-
-# HTML Header
+# Types of files and info about them
+file_sets = {
+    'metadata_boxplots'     : {
+        'title'     : 'Metadata whisker plots',
+        'pfx'       : 'metadata_whiskerplots',
+        'land_page' : 'metadata_whiskerplots.html'},
+    'algae_barplots'        : {
+        'title'     : 'Phytoplankton ID bar plots',
+        'pfx'       : 'Phyto_ID_barplots',
+        'land_page' : 'Algae/PhytoID_barplots_L1_viridis.html'},
+    'ASV_barplots'          : {
+        'title'     : 'Sequencing ASV bar plots',
+        'pfx'       : 'ASV_barplots',
+        'land_page' : 'ASV-barplots/ASV_barplots_16S_L1_viridis.html'
+        },
+    'spearman'              : {
+        'title'     : 'Metadata vs. taxonomic group Spearman correlation analysis',
+        'pfx'       : 'spearman',
+        'land_page' : 'spearman/spearman_16S-DNA.html'
+        }
+    }
+    
+# HTML Header for generating webpages
+# Page header text
+web_nav_header = '<h1>Rotten Ice Bio Data Analysis Navigation</h1>'
+# Root directory where html files are stored
+web_dir = 'http://faculty.weber.edu/cariefrantz/RottenIce/'
+# Other stuff to be added to the navigation list
+other_nav = ('<b>Python code: </b>'
+             + '<a href="https://github.com/cmfrantz/rottenice">Link</a>')
+# Text denoting local navigation
 nav_html_start = '<b>Plot navigation: </b>'
-html_head = '''
-<h1>Rotten Ice Bio Data Analysis Navigation</h1>
-<b>Metadata whisker plots: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce
-/metadata_whiskerplots.html">Link</a><br />
-<b>Algae ID bar plots: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/
-AlgaeID_barplots_L15_viridis.html">Link</a><br />
-<b>ASV bar plots: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/
-ASV-barplots/16S_barplots_L1_viridis.html">Link</a><br />
-<b>Beta diversity clustered heatmaps: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/
-B-div-heatmaps/heatmaps_16S_all.html">Link</a><br />
-<b>Metadata vs. taxonomic group Spearman correlation analysis: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/
-spearman/spearman_16S-DNA.html">Link</a><br />
-<b>Python code: </b>
-<a href="https://github.com/cmfrantz/rottenice">Link</a><br />
-'''

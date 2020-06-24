@@ -131,7 +131,7 @@ def buildBarPlot(plt_data, colorlist, y_max, save_image = False,
     
     # Create figure
 
-    print('Building ' + title + ' plot...')
+    # print('Building ' + title + ' plot...')
     p = figure(**kwargs)
     
     # Add bars corresponding to each taxon
@@ -199,12 +199,12 @@ def buildBokehNavDiv(page_title, subtitle_text, local_nav_html):
     header_div : bokeh.models.Div
         Div class containing the header html for a bokeh page.
     '''
-    html_nav_head = RottenIceVars.html_head
+    html_nav_head = genHTMLhead()
     html_page_head = '<h1>' + page_title + '</h1>'
     html_page_nav = '<p><b>Plot navigation: </b>' + local_nav_html + '</p>'
     html_subtitle = '<p>' + subtitle_text + '</p>'
-    header_div = Div(text = html_nav_head + html_page_head
-                     + html_page_nav + html_subtitle)
+    header_div = Div(text = (html_nav_head + html_page_head
+                             + html_page_nav + html_subtitle))
     return header_div
     
     
@@ -495,7 +495,7 @@ def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
     return filename, dirPath, data
 
 
-def findAbundantTaxa(datasets, samples, fcutoff = 0.1, max_taxa = 100):
+def findAbundantTaxa(datasets, sample_lists, fcutoff = 0.1, max_taxa = 100):
     '''This script identifies the limited set of most abundant taxa to \
         include in downstream analysis (e.g., bar plots) from ASV tables of \
             sequence results of the same gene with the same samples \
@@ -508,8 +508,9 @@ def findAbundantTaxa(datasets, samples, fcutoff = 0.1, max_taxa = 100):
         DataFrames must include sample name headers as well as 'taxonomy' \
             header.
             
-    samples : list of str
-        List containing sample names (as str) to be included in the analysis.   # Make sure scripts using this pass sample names with 'others' excluded
+    samples : list of index
+        List containing lists of sample names / indices (as str or index) \
+            to be included in the analysis of each passed dataset.
         All sample names should also be headers in all included DataFrames.
             
     fcutoff : float (optional)
@@ -527,7 +528,7 @@ def findAbundantTaxa(datasets, samples, fcutoff = 0.1, max_taxa = 100):
     '''
     abundantTaxa = []
     # Search in each dataset
-    for dataset in datasets:
+    for dataset, samples in zip(datasets, sample_lists):
         # Find the most abundant ASVs
         # Find all ASVs with rel abundance > cutoff
         print('Finding ASVs above min fraction cutoff...')
@@ -608,8 +609,9 @@ def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
     # Reclassify any values with assignments in the tax_reassign_list
     if tax_reassign_list:
         for val in list(tax_reassign_list):
-            OTU_table.loc[OTU_table['taxonomy']==val,
-                          'taxonomy'] = tax_reassign_list[val]
+            OTU_table.loc[
+                OTU_table['taxonomy']==val,
+                'taxonomy'] = tax_reassign_list[val]
     
     # Format taxonomy list to read better
     print('Formatting taxonomy...')
@@ -668,6 +670,20 @@ def genFilenamesByLevel(filename_prefix, max_level, filename_suffix = '',
         filenames.append(filename_prefix + '_L' + str(level)
                          + '_' + filename_suffix)
     return filenames
+
+
+def genHTMLhead():
+    '''Generates HTML header code from RottenIceVars variables'''
+    html_head = RottenIceVars.web_nav_header + '<p>'
+    file_sets = RottenIceVars.file_sets
+    for fset in file_sets:
+        html_head = (html_head + '<b>'
+                     + file_sets[fset]['title']
+                     + ':  </b><a href="'
+                     + RottenIceVars.web_dir
+                     + file_sets[fset]['land_page'] + '">Link</a><br />')
+    html_head = html_head + RottenIceVars.other_nav + '</p>'
+    return html_head
 
 
 def genLegendOutside(taxlist, colors, key_val_ht = 24, key_top_pad = 40):

@@ -22,7 +22,7 @@ any OTU table.
 There is another version (WebTaxBarplotsStacked) that was used for sequencing
 data that produces stacked plots in order to compare DNA vs. cDNA results.
 
-This script was created as part of the Rotten Ice Project
+This script was created as part of the Rotten Ice Project.
 
 
 Arguments:  None
@@ -39,13 +39,19 @@ Dependencies Install:
     sudo apt-get install python3-pip python3-dev
     pip install tkinter
     pip install progress
-    pip install pandas
     pip install numpy
+    pip install pandas
     pip install matplotlib
     pip install math
+    pip install bokeh
 
-You will also need to have RottenIceModules.py downloaded to the same \
-    directory as this script as it contains modules that this script calls.
+You will also need to have the following files \
+    in the same directory as this script. \
+They contain modules and variables that this script calls.
+    RottenIceModules.py
+    RottenIceVars.py
+If you get an error indicating that one of these modules is not found, \
+    change the working directory to the directory containing these files.
 
 Copyright (C) 2020  Carie M. Frantz
 
@@ -65,12 +71,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
-import pandas as pd
 import numpy as np
+from bokeh.io import output_file, show
+from bokeh.layouts import row, column
+
 import RottenIceModules
-from bokeh.io import output_file
-
-
+import RottenIceVars
 
 
 ####################
@@ -80,122 +86,70 @@ from bokeh.io import output_file
 # Set the max taxonomic depth to plot (e.g., deepest meaningful level)
 max_level = 14
 
-# Colors
-cmap = 'viridis'    # Change this to change the default colormap
-cmaptext = ''''Choose a colormap, e.g.,
-viridis, plasma, prism, nipy_spectral, jet, gist_earth, etc.
-See https://matplotlib.org/tutorials/colors/colormaps.html for a full list. 
-> '''
+# Samples to plot, and how they should be sorted in the plot
+samples = ['M-CS-HT', 'M-CS-HM', 'M-CS-HB', 'M-CS-SW',
+           'JN-CS-HT', 'JN-CS-HM', 'JN-CS-HB', 'JN-CS-SW',
+           'JY10-HT', 'JY10-HM', 'JY10-HB', 'JY10-Drain', 'JY10-PW',
+           'JY11-HT', 'JY11-HM', 'JY11-HB',
+           'JY11-IT', 'JY11-IM', 'JY11-IB', 'JY11-Drain', 'JY11-SW']
 
-
-
-#%%
-
-####################
-# IMPORTS
-####################
-import matplotlib
-import matplotlib.pyplot as plt
-from math import pi
-
-from bokeh.io import output_file, show, export_svgs
-from bokeh.layouts import row
-from bokeh.plotting import figure
-from bokeh.models import Legend, LegendItem, Panel, Tabs
-
-
-
-
-####################
-# VARIABLES
-####################
-
-# Input file variables
-sample_row = 0      # Row in ASV table files containing unique sample names
-OTU_col = 0         # Column in metadata file containing unique ASV names
-
+# Plot / HTML file title info
+title = 'Phytoplankton taxonomy'
+subtitle_text = (
+    '''Rotten ice project phytoplankton taxonomic ID barplots.
+    Taxonomic IDs by Sylvie Lessard (2016).
+    Taxonomy breakdown done by B. Tattersall (2017) using the
+    <a href = "https://www.algaebase.org/AlgaeBase">AlgaeBase database</a>.
+    Data processed by C. Frantz, May 2020 from cleaned tables
+    (plausible swapped sample corrected) using the script
+    <a href="https://github.com/cmfrantz/rottenice">
+    WebTaxBarplotsSimple.py</a>.''')
+    
+filename_prefix = RottenIceVars.file_sets['algae_barplots']['pfx']
 
 # Plot formatting
-pltht = 380         # height of the actual plot
-pltw = 500          # width of the actual plot
-minpadding = 5      # padding between plots and borders
-pltbottompad = 100  # padding for x axis label
-maxkeywidth = 925   # maximum width needed for the key
-keyvalht = 24       # height taken up by each key entry
+cmap = RottenIceVars.cmap # colormap to use; this uses the project default
+plot_width = 500        # width of the actual plot
+plot_height = 380       # height of the actual plot
+min_padding = 5         # padding between plots and borders
+plot_bottom_pad = 100   # padding for x axis label
+max_key_width = 925     # maximum width needed for the key
+key_val_height = 24     # height taken up by each key entry
+
+# Bokeh plot formatters
+# Values to the right of the ':' shown without quotes are based on
+# plot formatting variables defined above. Those in quotes can be modified.
+shared_kwargs = {
+    'plot_height'       : plot_height,
+    'min_border_top'    : min_padding,
+    'x_axis_label'      : 'Sample',
+    'toolbar_location'  : 'above',
+    'tools'             : 'hover,box_zoom,wheel_zoom,pan,reset,save',
+    'tooltips'          : '@samples $name: @$name'
+    }
 
 # Plot properties based on plot type
-displayprops = {
+# Values to the right of the ':' shown without quotes are based on
+# plot formatting variables defined above. Those in quotes can be modified.
+plot_properties = {
     'L' : {
         'title'     : 'Absolute',
-        'ylabel'    : 'Phytoplankton count (cells/mL)',
+        'dataset'   : 'abs',
         'legend'    : False,
-        'lpadding'  : minpadding,
-        'rpadding'  : minpadding
+        'y_axis_label' : 'Phytoplankton counts (cells/ml)',
+        'lpadding'  : min_padding,
+        'rpadding'  : min_padding
         },
     'R' : {
         'title'     : 'Relative',
-        'ylabel'    : 'Relative abundance',
+        'dataset'   : 'rel',
         'legend'    : True,
-        'lpadding'  : minpadding * 4,
-        'rpadding'  : maxkeywidth
+        'y_axis_label' : 'Relative abundance',
+        'lpadding'  : min_padding * 4,
+        'rpadding'  : max_key_width
         }
     }
 
-
-####################
-# FUNCTIONS
-####################
-
-
-
-
-
-
-def buildPlot(pltdata, samples, level, colors, pltkey, legend=False):
-    '''Builds the plots'''
-    # Determine plot height
-    minht = max(pltht + minpadding + pltbottompad, keyvalht * (len(pltdata)-1))
-    
-    # Build figure
-    p = figure(x_range = samples, 
-               plot_height = minht, 
-               min_border_top = minpadding, 
-               min_border_bottom = minht - pltht - minpadding,
-               plot_width = (pltw + displayprops[pltkey]['lpadding']
-                             + displayprops[pltkey]['rpadding']),
-               min_border_left = displayprops[pltkey]['lpadding'],
-               min_border_right = displayprops[pltkey]['rpadding'],
-               title = ('Taxonomy level ' + str(level) + ' '
-                        + displayprops[pltkey]['title']), 
-               x_axis_label = 'Sample',
-               y_axis_label = displayprops[pltkey]['ylabel'],
-               toolbar_location = 'above',
-               tools='hover,box_zoom,wheel_zoom,pan,reset,save', 
-               tooltips='$name: @$name')
-    
-    # Add the bars corresponding to each taxon
-    taxlist = list(pltdata)[1:]
-    vbars = p.vbar_stack(taxlist, x='samples', width = 0.9, color = colors, 
-                         source=pltdata)
-    
-    # Format plot
-    p.y_range.start = 0
-    p.x_range.range_padding = 0.1
-    p.xgrid.grid_line_color = None
-    p.xaxis.major_label_orientation = pi/4
-    p.axis.minor_tick_line_color = None
-    
-    # Add legend
-    if displayprops[pltkey]['legend'] == True:
-        legend = genLegend(taxlist, vbars)
-        p.add_layout(legend, 'right')
-        
-    # Save figure
-    p.output_backend = 'svg'
-    export_svgs(p, filename = (filename[0:-4] + '_barplot_'
-                               + displayprops[pltkey]['title'] + '_L'
-                               + str(level) + '.svg'))
-    return p
 
 #%%
 
@@ -205,52 +159,84 @@ def buildPlot(pltdata, samples, level, colors, pltkey, legend=False):
 
 if __name__ == '__main__':
     
-    # Get and format file
+    # Get file
     filename, filepath, data = RottenIceModules.fileGet(
-        'Select OTU table file')
-    data, samples = RottenIceModules.formatOTUtableData(
+        'Select OTU table file', tabletype = 'OTU_Table')
+    # Format file
+    data, sample_list = RottenIceModules.formatOTUtableData(
         data, max_level = max_level)
     
-    # maxval = np.max(sum(data))
+    # Find max absolute value for scaling axis
+    max_val = np.max(data[samples].sum(axis = 0))
+    max_ax_val = RottenIceModules.findMaxAxVal(max_val, 5)
           
-    # Get the colors (disable to use default colors)
-    # cmap = input(cmaptext)
+    # Get the formatting info
+    # Colors
+    # cmap = input(cmaptext)    # Disable to use default colors
+    tax_columns = RottenIceModules.levelCols(max_level) + ['taxonomy']
+    colormap = RottenIceModules.colorMap2Tax(
+        data[tax_columns].copy(), max_level, cmap)
+    # Kwargs
+    for plot in plot_properties:
+        props = plot_properties[plot]
+        kwargs = {
+            'plot_width' : plot_width + props['lpadding'] + props['rpadding'],
+            'min_border_left' : props['lpadding'],
+            'min_border_right' : props['rpadding'],
+            'y_axis_label' : props['y_axis_label'],
+            'title'     : props['title']
+            }
+        kwargs.update(shared_kwargs)
+        plot_properties[plot]['kwargs'] = kwargs
     
-    # Build tabs of plots
-    tabs = []
+    # Create shared HTML navigation header
+    filenames = RottenIceModules.genFilenamesByLevel(
+        filename_prefix, max_level, cmap = cmap)
+    nav_html = RottenIceModules.genPlotNavHTML(filenames)
+    
+    # Build each level's plot
     for level in np.arange(1,max_level+1):
         print('Generating Level ' + str(level) + ' plot...')
         # Prepare the data
-        pltdata, normpltdata = RottenIceModules.buildPlotDicts(
-            data, level, samples)
-        colors = RottenIceModules.colorsFromCmap(len(pltdata)-1, cmap)
+        pltdata, normpltdata, colors = RottenIceModules.buildPlotDicts(
+            data, level, samples, colormap)
         
-        # Generate filenames
-        leveltext = 'L' + str(level)
-        filepfx = filename[0:-4] + '_barplots_' + leveltext + '_' + cmap
-        output_file(filepfx +'.html', title = filename[0:-4] + ' barplots')
+        # Generate filename
+        output_file(filenames[level-1] +'.html',
+                    title = title + ' L' + str(level))
+        
+        # Build header navigation div
+        subtitle = ('<b>Taxonomic level ' + str(level) + '</b> '
+                    + subtitle_text)
+        header_div = RottenIceModules.buildBokehNavDiv(
+            title, subtitle, nav_html)
         
         # Create plots
-        lplt = RottenIceModules.buildBarPlot(
-            pltdata, colors, y_max, filepfx,
-            title = filename[0:-4] + '_' + leveltext + '_abs'
-            y_label = 'Phytoplankton counts (cells/ml)', legend = False,
-                 figoptions={})
-        rplt = RottenIceModules.buildBarPlot(
-            normpltdata, colors, 1, filepfx,
-            title = filename[0:-4] + '_' + leveltext + '_rel'
-            y_label = 'Relative abundance', legend = True,
-                 figoptions={})
-        grid = row(lplt, rplt)
-        
-        # Enable this for troubleshooting to display individual plots,
-        # but tabs won't stitch together into HTML file if it is enabled.
-        # show(grid)
-        # Create the tab
-        panel = Panel(child = row(lplt, rplt), title = 'Level ' + str(level))
-        tabs.append(panel)
-    
-    # Save tabs and HTML file
-    print('Saving HTML file...')
-    tabs = Tabs(tabs=tabs)
-    show(tabs)
+        plots = []
+        # Determine plot height
+        min_height = max(plot_height + min_padding + plot_bottom_pad,
+                    key_val_height * (len(pltdata)-1))
+        # Build each plot
+        for plot in plot_properties:
+            # Gather plot formatting info
+            props = plot_properties[plot]
+            props['kwargs'].update({
+                'plot_height'   : min_height,
+                'min_border_bottom' : min_height - plot_height - min_padding
+                })
+            if props['dataset'] == 'abs':
+                dset = pltdata
+                ymax = max_ax_val
+            elif props['dataset'] == 'rel':
+                dset = normpltdata
+                ymax = 1
+            # Build plot
+            plt = RottenIceModules.buildBarPlot(
+                dset, colors, ymax, legend = props['legend'],
+                **props['kwargs'])
+            plots.append(plt)
+                  
+        # Save page
+        grid = column([header_div, row(plots)])
+        print('Saving HTML file...')
+        show(grid)
