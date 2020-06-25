@@ -1004,13 +1004,16 @@ def genHTMLhead(page_title, page_nav_html='', subtitle_text=''):
 
 
 def genHTMLfile(filename, page_title, subtitle_text, image_filepath,
-                set_nav_html = '', alt_text = ''):
+                page_nav_html = '', alt_text = ''):
     '''Creates a new HTML file for the fileset from a saved plot image'''
     html_head = genHTMLhead(
-        page_title, set_nav_html = set_nav_html, subtitle_text = subtitle_text)
-    with open(filename + '.html', 'a') as file:
-        file.write('<HTML>' + html_head + image_filepath + '</HTML>')
-    print('Saved ' + filename + '.html')
+        page_title, page_nav_html = page_nav_html,
+        subtitle_text = subtitle_text)
+    html_img = ('<p><img src = "' + image_filepath
+                + '" alt = "' + alt_text + '"></p>')
+    with open(filename, 'a') as file:
+        file.write('<HTML>' + html_head + html_img + '</HTML>')
+    print('Saved ' + filename)
 
 
 def genPlotNavHTML_Sets(filename_sets):

@@ -47,7 +47,6 @@ To install using pip, execute the command:
 <li>Test and add...
 	<ul>
 	<li>Clustermap</li>
-	<li>MetadataWhiskerPlots</li>
 	</ul>
 </li>
 <li>Update scripts to run using modules...
@@ -55,7 +54,6 @@ To install using pip, execute the command:
 	<li>ChemDataPCA</li>
 	<li>ChemHeatmaps</li>
 	<li>SpearmanGrid</li>
-	<li>WebTaxBarplotsSimple</li>
 	<li>WebTaxBarplotsStacked</li>
 	</ul>
 </li>

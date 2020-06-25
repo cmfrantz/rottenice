@@ -116,7 +116,7 @@ metadataFullTitle = {
 # Types of files and info about them
 file_sets = {
     'metadata_boxplots'     : {
-        'title'     : 'Metadata whisker plots',
+        'title'     : 'Metadata box plots',
         'pfx'       : 'metadata_whiskerplots',
         'land_page' : 'metadata_whiskerplots.html'},
     'algae_barplots'        : {
