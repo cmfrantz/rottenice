@@ -136,7 +136,7 @@ def genSampleList(months, fractions, others = [], replicates = [],
     return samplelist
 
 
-def genSampleName(month, fraction, location = ['CS'], replicate = []):
+def genSampleName(month, fraction, location = 'CS', replicate = ''):
     'Generates sample name from sample metadata'
     if 'JY' in month:
         loccode = month
@@ -145,7 +145,7 @@ def genSampleName(month, fraction, location = ['CS'], replicate = []):
         elif fraction in ['P1','P2']: fraction = 'Drain'
     else:
         loccode = month + '-' + location
-    if replicate:
+    if len(replicate)>0:
         samplename = loccode + '-' + fraction + '-' + replicate
     else:
         samplename = loccode + '-' + fraction

@@ -51,7 +51,6 @@ To install using pip, execute the command:
 </li>
 <li>Update scripts to run using modules...
 	<ul>
-	<li>ChemHeatmaps</li>
 	<li>SpearmanGrid</li>
 	</ul>
 </li>

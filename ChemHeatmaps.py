@@ -24,15 +24,26 @@ Requirements:
 Example in command line:
     python ChemHeatmaps.py
 
+
 Dependencies Install:
     sudo apt-get install python3-pip python3-dev
-    pip install os
     pip install tkinter
-    pip install pandas
+    pip install progress
     pip install numpy
+    pip install pandas
     pip install matplotlib
+    pip install math
+    pip install bokeh
 
-
+You will also need to have the following files
+    in the same directory as this script.
+They contain modules and variables that this script calls.
+    RottenIceModules.py
+    RottenIceVars.py
+If you get an error indicating that one of these modules is not found,
+    change the working directory to the directory containing these files.
+    
+    
 Copyright (C) 2020  Carie M. Frantz
 
 This program is free software: you can redistribute it and/or modify
@@ -53,9 +64,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
-import os
-from tkinter import *
-from tkinter import filedialog
 import pandas as pd
 import numpy as np
 
@@ -65,14 +73,12 @@ import matplotlib.pyplot as plt
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
+import RottenIceModules
+import RottenIceVars
 
 ####################
 # VARIABLES
 ####################
-
-# Input file variables
-metadata_row = 2                    # Row containing unique metadata names
-sample_col = 0                      # Column containing unique sample names
 
 # Data to include
 site = 'CS'
@@ -107,11 +113,15 @@ plotvars = {                        # Variables to plot.
 maxplotcols = 4     # Maximum number of columns to show on the  plot
 scalewidth = 3.5    # Factor scales plot height based on number of plot cols
 scaleheight = 7     # Factor scales plot width based on number of plot rows
-clrmap = 'viridis'  # Colormap to use; see:
+cmap = RottenIceVars.cmap # Colormap to use; see:
                     # https://matplotlib.org/tutorials/colors/colormaps.html
 
-# Output filename
-filename = 'RottenIce_ChemHeatmaps_All'
+# Output file info
+file_info = RottenIceVars.file_sets['chem_heatmaps']
+subtitle_text = ('Created from compiled project metadata using the script '
+                 + '<a href="https://github.com/cmfrantz/rottenice">'
+                 + 'ChemHeatmaps.py</a>. Analysis done by C. Frantz, '
+                 + 'June 2020.')
 
 
 ####################
@@ -120,25 +130,11 @@ filename = 'RottenIce_ChemHeatmaps_All'
 
 def readMetadata():
     '''This function reads the sample metadata in from csv file'''
-    # User input dialog to locate the metadata file
-    root = Tk()                     # Opens user input window
-    root.filename = filedialog.askopenfilename(     # Ask user for file
-                            initialdir = "/",
-                            title = 'Select metadata file',
-                            filetypes = [('CSV', '*.csv')])
-    filename = root.filename        # Retrieves the selected filename
-    root.destroy()                  # Closes the user input window
-    dirPath = os.path.dirname(filename)     # Directory
-    print('Loading ' + filename + '...')
-    
-    # Read metadata tab
-    metadata = pd.read_csv(filename, header = metadata_row,
-                           index_col = sample_col)
-    
+    filename, directory, metadata = RottenIceModules.fileGet(
+        'Select metadata file', tabletype = 'metadata')
     # replace invalid values
     metadata = metadata.replace('na', np.nan)
-
-    return metadata, filename, dirPath
+    return metadata, filename, directory
 
 
 def buildArray(data, var):
@@ -149,26 +145,13 @@ def buildArray(data, var):
         # Loop through months
         for month in months:
             # Generate list of sample names
-            samples = [genSampleName(month, sample) for sample in sample_types]
+            samples = [RottenIceModules.genSampleName(month, fraction) 
+                       for fraction in sample_types]
             # Grab and paste in the data for that month
             vals = [float(val) for val in data.loc[samples,var].values]
             valueMatrix.loc[:,month] = vals
     else: print(var + ' is not a valid variable')
     return valueMatrix
-
-
-def genSampleName(month, fraction, site = site):
-    '''Generates the sample code from month, sample type, and sample site'''
-    if 'Blank' in fraction:
-        if 'JY' in month: name = 'JY-' + fraction
-        else: name = month + '-' + fraction
-    else:
-        if 'JY' in month:  
-            if fraction in ['BT', 'BM', 'BB']: fraction = 'B'
-            elif fraction in ['P1', 'P2']: fraction = 'Drain'
-            name = month + '-' + fraction
-        else: name = month + '-' + site + '-' + fraction
-    return name
             
                
 def getLineCoord(y):
@@ -213,12 +196,12 @@ def buildSubplot(ax, var, matrix_val, matrix_std, cmap):
 if __name__ == '__main__':
     
     # Get data from the user
-    data, infilename, dirpath = readMetadata()
+    data, infilename, directory = readMetadata()
         
     # Plot the data
     # Set up the subplots
     print('Setting up plot field...')
-    cmap = plt.get_cmap(clrmap)     # Load colormap
+    cmap = plt.get_cmap(cmap)     # Load colormap
     fig, axs = plt.subplots(len(plotvars), maxplotcols, 
                             sharey=True, sharex=True, 
                             figsize = [scalewidth*len(months),
@@ -253,6 +236,14 @@ if __name__ == '__main__':
     plt.show()
 
     # Save the image
-    fig.savefig(dirpath + '\\' + filename + ".svg", transparent=True)
-    fig.savefig(dirpath + '\\' + filename + ".pdf", transparent=True)
+    filename = file_info['pfx']
+    fig.savefig(directory + '\\' + filename + ".svg", transparent=True)
+    fig.savefig(directory + '\\' + filename + ".pdf", transparent=True)
+    
+    # Generate HTML
+    RottenIceModules.genHTMLfile(
+        directory + '\\' + file_info['land_page'],
+        file_info['title'], subtitle_text,
+        filename + '.svg',
+        alt_text = 'Heatmap table of metadata')
         

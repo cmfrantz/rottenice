@@ -115,6 +115,10 @@ metadataFullTitle = {
 
 # Types of files and info about them
 file_sets = {
+    'chem_heatmaps'         : {
+        'title'     : 'Metadata heatmaps',
+        'pfx'       : 'chem_heatmaps',
+        'land_page' : 'chem_heatmaps.html'},
     'metadata_boxplots'     : {
         'title'     : 'Metadata box plots',
         'pfx'       : 'metadata_whiskerplots',
@@ -128,8 +132,13 @@ file_sets = {
         'pfx'       : 'ASV_barplots',
         'land_page' : 'ASV-barplots/ASV_barplots_16S_L1_viridis.html'
         },
+    'beta_cluster'          : {
+        'title'     : 'Beta diversity sample cluster heatmaps',
+        'pfx'       : 'beta_clustermap',
+        'land_page' : 'B-div-heatmaps/beta_clustermap_16S_all.html'},
     'spearman'              : {
-        'title'     : 'Metadata vs. taxonomic group Spearman correlation analysis',
+        'title'     : ('Metadata vs. taxonomic group '
+                       + 'Spearman correlation analysis'),
         'pfx'       : 'spearman',
         'land_page' : 'spearman/spearman_16S-DNA.html'
         }
