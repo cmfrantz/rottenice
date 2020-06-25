@@ -192,7 +192,7 @@ if __name__ == '__main__':
     # Create shared HTML navigation header
     filenames = RottenIceModules.genFilenamesByLevel(
         filename_prefix, max_level, cmap = cmap)
-    nav_html = RottenIceModules.genPlotNavHTML(filenames)
+    nav_html = RottenIceModules.genPlotLevelNavHTML(filenames)
     
     # Build each level's plot
     for level in np.arange(1,max_level+1):

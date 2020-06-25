@@ -1029,13 +1029,13 @@ def genPlotNavHTML_Sets(filename_sets):
     crop = len(nav_html)
     for file_set in filename_sets:
         set_pfx = '  <em>' + file_set + ': </em>'
-        set_html = genPlotNavHTML(filename_sets[file_set])
+        set_html = genPlotLevelNavHTML(filename_sets[file_set])
         nav_html = nav_html + set_pfx + set_html[crop:] + '  //  '
     nav_html = nav_html[:-6]
     return nav_html
     
     
-def genPlotNavHTML(filenames):
+def genPlotLevelNavHTML(filenames):
     '''Generates plot navigation HTML from a list of filename prefixes \
         corresponding to each level for which plots were made. \
             If there are multiple sets of files (e.g., 16S & 18S data), \
