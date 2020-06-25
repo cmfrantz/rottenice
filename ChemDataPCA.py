@@ -26,12 +26,21 @@ Example in command line:
 
 Dependencies Install:
     sudo apt-get install python3-pip python3-dev
-    pip install os
     pip install tkinter
-    pip install pandas
+    pip install progress
     pip install numpy
+    pip install pandas
     pip install matplotlib
-    pip install sklearn
+    pip install math
+    pip install bokeh
+
+You will also need to have the following files \
+    in the same directory as this script. \
+They contain modules and variables that this script calls.
+    RottenIceModules.py
+    RottenIceVars.py
+If you get an error indicating that one of these modules is not found, \
+    change the working directory to the directory containing these files.
 
 
 Copyright (C) 2019  Carie M. Frantz
@@ -54,10 +63,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
-import os
-from tkinter import filedialog
-from tkinter import *
-import pandas as pd
 import numpy as np
 
 from matplotlib import pyplot as plt
@@ -69,102 +74,41 @@ matplotlib.rcParams['ps.fonttype'] = 42
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+import RottenIceModules
+
 
 ####################
 # VARIABLES
 ####################
 
-# List of parameters that could be used for PCA
+# List of parameters that can be used for PCA
 featlist = ["temperature", "salinity", "bulk_density",
             "DOC", "POC", "pEPS", "nitrogen", "CN",
             "Chl", "Phaeo", "FoFa", "PAM",
             "bact_cell_ct", "CTC", "bact_active_cell_ct",
             "diatom_ct", "phyto_ct_all", "phyto_ct_other"]
 
-# Input file variables
-metadata_row = 2                    # Row containing unique metadata names
-sample_col = 0                      # Column containing unique sample names
+# List of months to include
+months = ['M','JN','JY11']
+# List of fractions to include
+fractions = ['HT', 'HM', 'HB']
 
-# Plot formatting variables
-site = 'CS' # Restrict analysis to CS samples
-# Assign color by sample month
-# (this also serves as the list of months to plot)
-months = {
-    'M'     : 'blue',
-    'JN'    : 'green',
-    'JY11'  : 'red'
-    }
-# Assign marker by sample horizon
-# (this also serves as the list of horizons to plot)
-horizons = {
-    'HT'    : '^',
-    'HM'    : 'o',
-    'HB'    : 'v'
-    }
-
+#%%
 
 ####################
 # FUNCTIONS
 ####################
-def genSampleName(month, horizon):
-    '''Generates the sample name from month and horizon'''
-    if 'JY' in month:
-        sample = month + '-' + horizon
-    else:
-        sample = month + '-' + site + '-' + horizon
-    return sample
-
-
-def readMetadata():
-    '''This function reads the sample metadata in from csv file'''
-    # User input dialog to locate the metadata file
-    root = Tk()                     # Opens user input window
-    root.filename = filedialog.askopenfilename(     # Ask user for file
-                            initialdir = "/",
-                            title = 'Select metadata file',
-                            filetypes = [('CSV', '*.csv')])
-    filename = root.filename        # Retrieves the selected filename
-    root.destroy()                  # Closes the user input window
-    dirPath = os.path.dirname(filename)     # Directory
-    print('Loading ' + filename + '...')
-    
-    # Read metadata tab
-    metadata = pd.read_csv(filename, header = metadata_row,
-                           index_col = sample_col)
-    
-    # replace invalid values
-    metadata = metadata.replace('na', np.nan)
-
-    return metadata, filename, dirPath
-
 
 def prepData(metadata):
     '''Prepare data from user-selected features'''
     # Ask user for features to plot
-    features = input('''
-*** Enter the list of features to include in the PCA ***
-Seperate items with commas as in the example below:
-> temperature, salinity, DOC, nitrogen
-                     
-Options include: ''' + ', '.join(featlist) + '''
-> ''')
-
-    features = features.split(', ')
-    metadata = metadata[features]
-    
-    # Generate list of samples and their plot formatting info
-    samples = []
-    datafmt = pd.DataFrame(index = metadata.index, columns=['color', 'marker'])
-    for month in months:
-        for horizon in horizons:
-            sample = genSampleName(month, horizon)
-            datafmt.loc[sample,'color'] = months[month]
-            datafmt.loc[sample,'marker'] = horizons[horizon]
-            samples.append(sample)
-    data = metadata.merge(datafmt, left_index = True, right_index = True)
-    data = data.loc[samples]
-   
-    return data, features
+    features = input('Enter the list of features to include in the PCA. '
+                     + 'Seperate items with commas as in the example below: '
+                     + '\n > temperature, salinity, DOC, nitrogen \n'
+                     + 'Options include: ' + ', '.join(featlist)
+                     + '\n > ')
+    features = features.split(', ')    
+    return metadata[features], features
 
 
 def calcPCA(data, features):
@@ -176,19 +120,21 @@ def calcPCA(data, features):
     pca = PCA(n_components = 2)     # 2-component PCA
     principalComponents = pca.fit_transform(vals)
     explained_var = pca.explained_variance_ratio_
-    data['PC1'] = principalComponents[:,0]
-    data['PC2'] = principalComponents[:,1]
+    data.loc[:,'PC1'] = principalComponents[:,0]
+    data.loc[:,'PC2'] = principalComponents[:,1]
         
     return data, explained_var
         
 
-def plotResults(data, features, explained_var, dirPath):
+def plotResults(data, features, datafmt, explained_var, dirPath):
     # Create the plot & label axes
-    fig = plt.figure(figsize = (8,8))
-    ax = fig.add_subplot(1,1,1) 
+    fig = plt.figure(figsize = (6,4))
+    ax = fig.add_subplot(1,1,1)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width*0.7, box.height])
     
     # Add title
-    ax.set_title('2 component PCA: ' + ', '.join(features))
+    ax.set_title('2 component PCA:\n' + ', '.join(features))
     
     # Add axis titles
     ax.set_xlabel('PC1 (' + str(round(explained_var[0]*100, 1)) + '%)',
@@ -198,14 +144,13 @@ def plotResults(data, features, explained_var, dirPath):
     
     # Plot each point  
     for sample in data.index:
-        ax.scatter(data.loc[sample, 'PC1'],                 # x value
-                   data.loc[sample, 'PC2'],                 # y value
-                   c = data.loc[sample, 'color'],           # marker color
-                   marker = data.loc[sample, 'marker'],     # marker shape
-                   s=50)                                    # marker size
+        ax.plot(data.loc[sample, 'PC1'],                 # x value
+                data.loc[sample, 'PC2'],                 # y value
+                linestyle = 'None',
+                **datafmt[sample])                       # marker size
     
     # Add legend
-    ax.legend(data.index)
+    ax.legend(data.index, loc = 'upper left', bbox_to_anchor = (1, 1))
     
     # Show and save figure
     plt.show()
@@ -216,19 +161,23 @@ def plotResults(data, features, explained_var, dirPath):
 # MAIN FUNCTION
 ####################
 if __name__ == '__main__':
+    # Generate list of samples and their plot formatting info
+    samples, markers = RottenIceModules.genSamples_w_Markers(months, fractions)
+    datafmt = dict(zip(samples, markers))
+    
     # Retrieve the metadata file
-    metadata, filename, dirPath = readMetadata()
+    filename, dirpath, metadata = RottenIceModules.fileGet(
+        'Select metadata file', tabletype = 'metadata')
+    metadata = metadata.replace('na', np.nan).loc[samples]
     
     # Loop for as many plots as user wants to build
     while True:
         # Prep the data for PCA based on user input for which variables to use
         data, features = prepData(metadata)
         # Perform PCA
-        data, explained_var = calcPCA(data, features)
+        data, explained_var = calcPCA(data.copy(), features)
         # Plot results
-        plotResults(data, features, explained_var, dirPath)
+        plotResults(data, features, datafmt, explained_var, dirpath)
         # Ask user if they want to build another plot
         if input('Build another plot? Y/N  > ') == 'N':
             break
-    
-    

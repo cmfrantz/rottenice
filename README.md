@@ -51,14 +51,14 @@ To install using pip, execute the command:
 </li>
 <li>Update scripts to run using modules...
 	<ul>
-	<li>ChemDataPCA</li>
 	<li>ChemHeatmaps</li>
 	<li>SpearmanGrid</li>
 	</ul>
 </li>
 <li>Script-specific changes	
 	<ul>
-	<li>WebTaxBarplotsSimple: add grouping module</li>
+	<li>WebTaxBarplotsSimple: Add grouping module</li>
+	<li>ChemDataPCA: Determine which metadata parameters are available (no nan) based on sample set</li>
 	</ul>
 </li>
 </ul>
