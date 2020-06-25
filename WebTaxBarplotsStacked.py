@@ -47,12 +47,12 @@ Dependencies Install:
     pip install math
     pip install bokeh
 
-You will also need to have the following files \
-    in the same directory as this script. \
+You will also need to have the following files
+    in the same directory as this script.
 They contain modules and variables that this script calls.
     RottenIceModules.py
     RottenIceVars.py
-If you get an error indicating that one of these modules is not found, \
+If you get an error indicating that one of these modules is not found,
     change the working directory to the directory containing these files.
 
 Copyright (C) 2020  Carie M. Frantz

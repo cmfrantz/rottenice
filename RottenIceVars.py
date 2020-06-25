@@ -5,7 +5,7 @@ Created on Fri Jun 19 11:01:36 2020
 @project: RottenIce
 
 VARIABLES SHARED BETWEEN DIFFERENT SCRIPTS IN THE ROTTEN ICE PROJECT
-This document contains a collection of variables that are used in multiple \
+This document contains a collection of variables that are used in multiple
     scripts in the Rotten Ice project.
 
 Arguments:  None

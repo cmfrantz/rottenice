@@ -45,12 +45,12 @@ Dependencies Install:
     pip install math
     pip install bokeh
 
-You will also need to have the following files \
-    in the same directory as this script. \
+You will also need to have the following files
+    in the same directory as this script.
 They contain modules and variables that this script calls.
     RottenIceModules.py
     RottenIceVars.py
-If you get an error indicating that one of these modules is not found, \
+If you get an error indicating that one of these modules is not found,
     change the working directory to the directory containing these files.
 
 Copyright (C) 2020  Carie M. Frantz
@@ -95,13 +95,13 @@ samples = ['M-CS-HT', 'M-CS-HM', 'M-CS-HB', 'M-CS-SW',
 
 # Plot / HTML file title info
 title = 'Phytoplankton taxonomy'
-subtitle_text = ('Rotten ice project phytoplankton taxonomic ID barplots.'
-                 + 'Taxonomic IDs by Sylvie Lessard (2016).'
-                 + 'Taxonomy breakdown done by B. Tattersall (2017) using the'
+subtitle_text = ('Rotten ice project phytoplankton taxonomic ID barplots. '
+                 + 'Taxonomic IDs by Sylvie Lessard (2016). '
+                 + 'Taxonomy breakdown done by B. Tattersall (2017) using the '
                  + '<a href = "https://www.algaebase.org/AlgaeBase">'
-                 + 'AlgaeBase database</a>.'
-                 + 'Data processed by C. Frantz, May 2020 from cleaned tables'
-                 + '(plausible swapped sample corrected) using the script'
+                 + 'AlgaeBase database</a>. '
+                 + 'Data processed by C. Frantz, May 2020 from cleaned tables '
+                 + '(plausible swapped sample corrected) using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
                  + 'WebTaxBarplotsSimple.py</a>.')
     

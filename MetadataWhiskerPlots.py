@@ -9,7 +9,7 @@ Created on Mon Jun 22 09:36:30 2020
 @project: RottenIce
 
 CREATES WHISKER BOX PLOTS COMPARING METADATA VALUES
-This script creates whisker box plots from specified metadata values and \
+This script creates whisker box plots from specified metadata values and
     overlays all datapoints in order to enable metadata comparisons.
 This script was created as part of the Rotten Ice Project.
 
@@ -28,12 +28,12 @@ Dependencies Install:
     pip install numpy
     pip install matplotlib
 
-You will also need to have the following files \
-    in the same directory as this script. \
+You will also need to have the following files
+    in the same directory as this script.
 They contain modules and variables that this script calls.
     RottenIceModules.py
     RottenIceVars.py
-If you get an error indicating that one of these modules is not found, \
+If you get an error indicating that one of these modules is not found,
     change the working directory to the directory containing these files.
 
 Copyright (C) 2020  Carie M. Frantz

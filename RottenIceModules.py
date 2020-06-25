@@ -10,7 +10,7 @@ Created on Thu Jun 18 21:49:22 2020
 @project: RottenIce
 
 MODULES SHARED BETWEEN DIFFERENT SCRIPTS IN THE ROTTEN ICE PROJECT
-This script contains a collection of functions that are used in multiple \
+This script contains a collection of functions that are used in multiple
     scripts in the Rotten Ice project.
 
 Arguments:  None
