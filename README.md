@@ -54,7 +54,6 @@ To install using pip, execute the command:
 	<li>ChemDataPCA</li>
 	<li>ChemHeatmaps</li>
 	<li>SpearmanGrid</li>
-	<li>WebTaxBarplotsStacked</li>
 	</ul>
 </li>
 <li>Script-specific changes	
