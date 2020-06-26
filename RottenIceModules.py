@@ -155,7 +155,7 @@ def genSampleName(month, fraction, location = 'CS', replicate = ''):
 
 
 def metadataFromSamplename(samplename):
-	'''Determines the month and horizon from a sample name'''
+	'''Determines the month and fraction from a sample name'''
 	breakout = samplename.split('-')
 	month = breakout[0]
 	if 'JY' in month:
@@ -217,7 +217,7 @@ def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
         ftype = [('CSV', '*.csv')]
         sep = ','
     elif file_type == 'tsv':
-        ftype = [('TSV'), '*.tsv, *.txt']
+        ftype = [('TSV', '*.tsv, *.txt')]
         sep = '\t'
     
     # Open user input file dialog to pick file
@@ -480,7 +480,7 @@ def groupTaxa(data_table, focusTaxa, max_level):
         # Find non-empty values in the taxonomy column for this level
         indices = [i for i in data.index if data.loc[i]['L'+str(L)]]
         # Generate taxonomy names at this level
-        data.loc['taxonomy'] = genTaxName(data[levelCols(L)]) 
+        data['taxonomy'] = genTaxName(data[levelCols(L)]) 
         # Generate list of unique taxonomic names at this level                 
         taxlist = getUnique(data.loc[indices]['taxonomy'])
         # Remove any empty values
@@ -499,7 +499,8 @@ def groupTaxa(data_table, focusTaxa, max_level):
                     excludedOthers = (
                         excludedOthers + [str(val) for val in taxvals])
                     data.loc[indices, 'L'+str(L)] = 'Other'
-                    data.loc[indices, 'L'+str(L+1):'L'+str(14)] = ''
+                    if L < max_level:
+                        data.loc[indices, 'L'+str(L+1):'L'+str(max_level)] = ''
         bar.next()
     bar.finish()
     return data, excludedOthers
@@ -641,10 +642,6 @@ def genDivergingCmap():
     end = cmap(0.5)
     #center = viridis((end-start)/2+start)
     center = (1,1,1)
-    
-    #N = 256
-    N = 1
-    n = 128
     
     low_vals = []
     high_vals = []
@@ -1035,14 +1032,46 @@ def genHTMLhead(page_title, page_nav_html='', subtitle_text=''):
     return html_head + html_page_head + page_nav_html + subtitle_text
 
 
-def genHTMLfile(filename, page_title, subtitle_text, image_filepath,
-                page_nav_html = '', alt_text = ''):
-    '''Creates a new HTML file for the fileset from a saved plot image'''
+def genHTMLfile(filename, page_title, subtitle_text, image_filepaths,
+                alt_text = '', page_nav_html = ''):
+    '''Creates a new HTML file for the fileset from saved plot image(s)
+
+    Parameters
+    ----------
+    filename : str
+        Name and path of the file (includes *.html).
+    page_title: str
+        Title text for the page.
+    subtitle_text: str
+        Subtitle text for the page.
+    image_filepaths: str or list of str
+        Filepath (in the final web directory) that will link to image(s)
+    alt_text : str or list of str
+        Alternate text for each image.
+    page_nav_html : str
+        HTML code for the page navigation if page is part of a set of pages.
+
+    Returns
+    -------
+    None
+
+    '''
+    # Get the generic header
     html_head = genHTMLhead(
         page_title, page_nav_html = page_nav_html,
         subtitle_text = subtitle_text)
-    html_img = ('<p><img src = "' + image_filepath
-                + '" alt = "' + alt_text + '"></p>')
+    # Determine if single image or list of images
+    if type(image_filepaths) == str:
+        image_filepaths = [image_filepaths]
+        alt_text = [alt_text]
+    elif type(alt_text) == str:
+        alt_text = [alt_text] * len(image_filepaths)
+    # Generate html
+    html_img = ''
+    for i, image in enumerate(image_filepaths):
+        html_img = (html_img + '<p><img src = "' + image
+                    + '" alt = "' + alt_text[i] + '"></p>')
+    # Save file
     with open(filename, 'a') as file:
         file.write('<HTML>' + html_head + html_img + '</HTML>')
     print('Saved ' + filename)

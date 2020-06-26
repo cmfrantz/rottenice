@@ -6,6 +6,7 @@ by Carie Frantz cariefrantz@weber.edu
 
 <table>
 <tr><th>Script</th><th>Description</th><th>Data files used</th></tr>
+<tr><td>BetaClustermaps.py</td><td>Used to generate sample clustermaps from sample distance matrices</td><td>16S_dist_matrix.csv, 18S_dist_matrix.csv</td></tr>
 <tr><td>ChemDataPCA.py</td><td>Used to generate PCA plots of physical and chemical habitat parameters</td><td>metadata.csv</td></tr>
 <tr><td>ChemHeatmaps.py</td><td>Used to generate heatmaps of sample metadata (physical, chemical, and biological measurements)</td><td>metadata.csv</td></tr>
 <tr><td>SpearmanGrid.py</td><td>Used to generate a heatmap grid of Spearman correlation coefficients for metadata vs. taxonomic group abundance</td><td>metadata.csv, 16S_cDNA_ASV-table.csv, 18S_cDNA_ASV-table.csv</td></tr>
@@ -45,16 +46,7 @@ To install using pip, execute the command:
 ## To do
 
 <ul>
-<li>Test and add...
-	<ul>
-	<li>Clustermap</li>
-	</ul>
-</li>
-<li>Script-specific changes	
-	<ul>
-	<li>WebTaxBarplotsSimple: Add grouping module</li>
-	<li>ChemDataPCA: Determine which metadata parameters are available (no nan) based on sample set</li>
-	<li>BetaClustermap: Fix key colors</li>
-	</ul>
-</li>
+<li>WebTaxBarplotsSimple: Add grouping module</li>
+<li>ChemDataPCA: Determine which metadata parameters are available (no nan) based on sample set</li>
+<li>BetaClustermap: Fix key colors</li>
 </ul>
