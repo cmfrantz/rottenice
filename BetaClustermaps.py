@@ -327,16 +327,16 @@ for gene in genes:
         header_row = 0, index_col = 0)
     genes[gene]['distMatrix'] = parseSamples(distance_matrix)
 
-filename = directory + '\\' + file_pfx
+filepath_pfx = directory + '\\' + file_pfx
 
 # Run the analysis and build the plots
 for gene in genes:
     # Get gene's info
-    file_pfx = filename + '_' + gene
+    filename = filepath_pfx + '_' + gene
     distMatrix = genes[gene]['distMatrix']
     
     # Plot set 1: all data
-    buildPlot(distMatrix, 'month', 50, file_pfx + '_all')
+    buildPlot(distMatrix, 'month', 50, filename + '_all')
     
     # Plot set 2: cDNA and DNA in seperate figures
     # Split datasets into cDNA and DNA
@@ -351,14 +351,14 @@ for gene in genes:
     for ds in datasets:
         # Build and save plot of all data for the template
         print('Building ' + gene + ' ' + ds + ' plots...')
-        buildPlot(datasets[ds]['all'], 'month', 20, file_pfx + '_' + ds)
+        buildPlot(datasets[ds]['all'], 'month', 20, filename + '_' + ds)
         
         # Split out different months
         for month in months:
             print(month)
             datasets[ds][month] = datasets[ds]['all'].loc[month][month]
             buildPlot(datasets[ds][month], 'fraction', 10,
-                      file_pfx + '_' + month + '_' + ds)
+                      filename + '_' + month + '_' + ds)
         
         # Split out different fractions
         for ftype in fractions:
@@ -367,13 +367,13 @@ for gene in genes:
             fdf = datasets[ds]['all'].loc[:, pd.IndexSlice[:,f]]
             datasets[ds][ftype] = fdf.loc[pd.IndexSlice[:,f],:]
             buildPlot(datasets[ds][ftype], 'month', 10,
-                      file_pfx + '_' + ftype + '_' + ds)
+                      filename + '_' + ftype + '_' + ds)
         
 
 # Generate HTML pages
 headstr = RottenIceModules.genHTMLhead(
     title, page_nav_html = nav_html, subtitle_text = subtitle_text)
-genHTMLPage(headstr)        
+genHTMLPage(headstr)
         
 
     
