@@ -90,9 +90,6 @@ import RottenIceVars
 # VARIABLES
 ####################
 
-# Set the max taxonomic depth to plot (e.g., deepest meaningful level)
-max_level = 14
-
 # Plot / HTML file title info
 title = 'Sample taxonomy from amplicon sequencing'
 subtitle_text = ('Rotten ice project Illumina sequencing data '
@@ -117,29 +114,12 @@ groups = {
 grpdelim = '-'   
 # Sample names including any of these strings will be grouped in the 'Other'
 # category and will be excluded from the focus taxa analysis
-other_list = ['space', 'Blank', 'EL']
+other_list = RottenIceVars.other_samples
 
-# List of taxonomic values to reassign,
-# with their taxonomic level and new classification (after ':')
-tax_reassign_list = {
-    ('Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-     + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-     + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-     + 'Ambiguous_taxa; Ambiguous_taxa; D_14__')
-            : 'Unassigned',
-    ('Bacteria')
-            : 'Bacteria; Other'}
 
 # List of genes sequenced with maximum meaningful taxonomic level
 # Each of these will be on its own page
-genes       = {
-    '16S'   : {
-        'max_level'     : 7
-        },
-    '18S'   : {
-        'max_level'     : 11
-        }
-    }
+genes = RottenIceVars.genes
 
 # Number of taxa plotted
 max_taxa = 100   # Max number of taxa to show in a plot
@@ -225,7 +205,7 @@ pltlist = {
 # PROGRAM VARIABLES
 # (Modifying these may cause the program to break... proceed with caution)
 # Data types
-templates   = ['DNA', 'cDNA']
+templates   = RottenIceVars.templates
 
 
 ####################
@@ -264,6 +244,8 @@ def formatData(datasets):
           '***************************')   
     for ds in datasets:
         print(ds)
+        gene = datasets[ds]['gene']
+        tax_reassign_list = RottenIceVars.genes[gene]['tax_reassign_list']
         data, samples = RottenIceModules.formatOTUtableData(
             datasets[ds]['data'], max_level = datasets[ds]['max_level'],
             tax_reassign_list = tax_reassign_list)
@@ -344,7 +326,7 @@ def groupByAbundantTaxa(datasets, dslist):
         # L-1 taxonomic group as a focus taxon 'Other'
         print('Grouping ' + ds + ' ASVs at each taxonomic level...')
         grouped_data, others = RottenIceModules.groupTaxa(
-            datasets[ds]['data'], focus_taxa)
+            datasets[ds]['data'], focus_taxa, datasets[ds]['max_level'])
         datasets[ds]['grouped_data'] = grouped_data
         datasets[ds]['excluded_others'] = others
         

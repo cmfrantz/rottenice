@@ -23,6 +23,7 @@ The code for this project requires the following list of packages in order to ru
 <li>math</li>
 <li>scipy</li>
 <li>sklearn</li>
+<li>seaborn</li>
 <li>matplotlib</li>
 <li>bokeh</li>
 </ul>
@@ -47,13 +48,13 @@ To install using pip, execute the command:
 <li>Test and add...
 	<ul>
 	<li>Clustermap</li>
-	<li>WebTaxBarplotsStacked</li>
 	</ul>
 </li>
 <li>Script-specific changes	
 	<ul>
 	<li>WebTaxBarplotsSimple: Add grouping module</li>
 	<li>ChemDataPCA: Determine which metadata parameters are available (no nan) based on sample set</li>
+	<li>BetaClustermap: Fix key colors</li>
 	</ul>
 </li>
 </ul>
