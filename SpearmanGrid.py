@@ -37,13 +37,21 @@ Example in command line:
 
 Dependencies Install:
     sudo apt-get install python3-pip python3-dev
-    pip install os
     pip install tkinter
     pip install progress
-    pip install pandas
     pip install numpy
-    pip install scipy
+    pip install pandas
     pip install matplotlib
+    pip install math
+    pip install bokeh
+
+You will also need to have the following files
+    in the same directory as this script.
+They contain modules and variables that this script calls.
+    RottenIceModules.py
+    RottenIceVars.py
+If you get an error indicating that one of these modules is not found,
+    change the working directory to the directory containing these files.
 
 
 Copyright (C) 2020  Carie M. Frantz
@@ -66,9 +74,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
-import os
-from tkinter import filedialog
-from tkinter import *
 from progress.bar import Bar
 
 import pandas as pd
@@ -82,25 +87,20 @@ from matplotlib import pyplot as plt
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
+import RottenIceModules
+import RottenIceVars
+
 
 ####################
 # VARIABLES
 ####################
 
-# Input file variables
-metadata_row = 2    # Row in metadata file containing unique metadata names
-sample_col = 0      # Column in metadata file containing unique sample names
-sample_row = 0      # Row in ASV table files containing unique sample names
-ASV_col = 0         # Column in metadata file containing unique ASV names
-
 # Types of sequence data
-# Genes sequenced and their corresponding max meaningful taxonomic level
-genes = {
-    '16S'   : 7,    # Tax level 7 is species level for 16S
-    '18S'   : 11    # Tax level 11 is species level for 18S
-    }
-# Types of sequences (templates)
-templates = ['DNA', 'cDNA']
+genes = RottenIceVars.genes
+templates = RottenIceVars.templates
+
+# Samples to exclude
+otherlist = RottenIceVars.other_samples
 
 # Variables to plot
 varlist = ['day_num', 'horizon_code', 'sample_mat_code',
@@ -110,176 +110,42 @@ varlist = ['day_num', 'horizon_code', 'sample_mat_code',
            'bact_active_cell_ct', 'diatom_ct', 'phyto_ct_all',
            'phyto_ct_other', 'pEPS', 'POC', 'nitrogen', 'CN']
 
-# Samples to exclude
-otherlist = ['space', 'Blank', 'EL']
-
-# Colormap to use
-cmap = 'PRGn'
+# Colormap to use - pick a diverging colormap
+cmap = RottenIceModules.genDivergingCmap()
 
 # Significance cutoff for plot:
 # Correlation coefficients with p values greater than this are excluded from
 # the plot so that only "significant" correlations are shown
-p_cutoff = 0.05
+p_cutoff = 0.01
+# Number of taxonomic groups to consider in each plot
+n_groups = 10
+
+# Info about file naming
+file_info = RottenIceVars.file_sets['spearman']
+out_filename = file_info['pfx']
+title = file_info['title']
 
 # HTML code for the for the HTML files
-# Header links
-linkhead = '''        
-<h1>Rotten Ice Bio Data Analysis Navigation</h1>
-<b>ASV bar plots: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/ASV-barplots/
-16S_barplots_L1_viridis.html">Link</a><br />
-<b>Algae ID bar plots: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/
-AlgaeID_barplots_L15_viridis.html">Link</a><br />
-<b>Beta diversity clustered heatmaps: </b>
-<a href = "http://faculty.weber.edu/cariefrantz/RottenIce/B-div-heatmaps/
-heatmaps_16S_all.html">Link</a><br />
-<b>Metadata vs. taxonomic group correlation analysis: </b>
-<a href = "spearman_16S-DNA.html">16S-DNA</a>  |  
-<a href = "spearman_16S-cDNA.html">16S-cDNA</a>  |  
-<a href="spearman_18S-DNA.html">18S-DNA</a>  |  
-<a href="spearman_18S-cDNA.html">18S-cDNA</a><br />
-'''
 # Subheading text (Part II after the level number)
-subhead2 = '''
-showing correlation between biogeochemical variables and 
-relative abundance of major taxonomic groups.
-Values shown are Spearman correlation values calculated using the 
+subtitle_text = '''
+Correlation between biogeochemical variables and relative abundance of major
+taxonomic groups. Values shown are Spearman correlation coefficients
+calculated using the
 <a href="https://docs.scipy.org/doc/scipy/reference/generated/
 scipy.stats.spearmanr.html">scipy.stats.spearmanr package</a>
 (1.4.1) for python. 
-Only significant correlations (p <=0.05) are shown. 
+Only significant correlations (p <=''' + str(p_cutoff) + ''') are shown. 
 Positive numbers indicate a positive correlation, 
 negative numbers indicate a negative correlation; 
 larger numbers indicate stronger correlations. 
-The top 20 most abundant taxonomic groups (across all samples)
-for each level were analyzed. 
-Analysis done by C. Frantz, June 2020.</p>
+The top ''' + str(n_groups) + ''' most abundant taxonomic groups for each 
+level were analyzed (across all samples, with abundance normalized to total 
+ amplicon recovery). Analysis done by C. Frantz, June 2020.
 '''
 
 ####################
 # FUNCTIONS
 ####################
-
-def loadFile(text, sep=',', header_lines=0, index_col=0, 
-             initialdir = os.getcwd()):
-    '''Load file containing a table'''
-    # User input dialog to locate the metadata file
-    root = Tk()                     # Opens user input window
-    root.filename = filedialog.askopenfilename(initialdir = initialdir,
-                                               title = text)
-    filename = root.filename
-    root.destroy()                  # Closes the user input window
-    dirPath = os.path.dirname(filename)     # Directory
-    print ('Loading ' + filename + '...')
-    # Read in and return data
-    data = pd.read_csv(filename, sep = sep, header = header_lines,
-                       index_col = index_col)
-    return data, dirPath
-
-
-def genTaxlist(tax_vals):
-    '''Returns the unique taxonomic assignments in a taxonomy list'''
-    taxlist = list(set(tax_vals))
-    taxlist.sort()
-    return taxlist
-
-
-def levelCols(lmax):
-    '''Generates the set of column names for all levels up to a given level'''
-    cols = ['L' + str(i) for i in np.arange(1,lmax+1)]
-    return cols
-
-
-def formatASVTable(data):
-    '''Prepares ASV table for analysis'''
-    # Delete samples to ignore
-    samples = list(data.columns)[0:-1]  # Pull list of samples from header
-    samples = [sample for sample in samples
-               if not any(other in sample for other in otherlist)]
-    data = data.loc[:, samples + ['taxonomy']]
-    
-    # Normalize the data to reflect fractional abundance
-    sums = data[samples].sum(axis = 0)
-    data.loc[:,samples] = data[samples]/sums
-    
-    # Format taxonomy list to read better
-    for i in np.arange(15):
-        delstr = 'D_'+str(i)+'__'
-        data.loc[:,'taxonomy'] = data['taxonomy'].str.replace(delstr, '')    
-    
-    # Break listed taxonomy into taxonomy at each taxonomic level
-    taxlist = genTaxlist(data['taxonomy'])
-    bar = Bar('Parsing taxonomy...', max = len(taxlist)) # Progress bar
-    for value in taxlist:
-        splitlist=[value]
-        # Get list of levels
-        if '; __' in value:
-            splitlist = value.split('; __')
-        if '; ' in value:
-            splitlist = value.split('; ')
-        # Fix last level if needed
-        if splitlist[-1]:
-            if splitlist[-1][-1] == ';':
-                splitlist[-1] = splitlist[-1][0:-1]
-        else: splitlist = splitlist[0:-1]
-        # Fill in taxonomy value at each level    
-        for i in np.arange(len(splitlist)):
-            data.loc[data['taxonomy']==value, 'L'+str(i+1)] = splitlist[i]
-        bar.next()  # Advance progress bar
-    bar.finish()    # Stop progress bar
-    
-    # Get rid of nans in taxonomy levels
-    end_level = 14
-    cols = levelCols(end_level)
-    data.loc[:, cols] = data[cols].replace(np.nan, '')
-    
-    return data, samples
-
-
-def condenseDataset(data, level, samples):
-    '''Condenses the dataset at a given level to combine ASVs with the same
-        taxonomy call '''
-    # Generate list of unique taxonomic values at the selected level
-    cols = levelCols(level)
-    taxnames = genTaxNames(data[cols])
-    data['taxonomy'] = taxnames
-    taxlist = genTaxlist(taxnames)
-    
-    # Set up a new dataframe to hold the condensed data
-    condData = pd.DataFrame(index = taxlist, columns = samples)
-    
-    # Loop through taxonomy list and find combined ASV counts for each group
-    for value in taxlist:
-        # List all ASV ids that were assigned the given taxonomy value
-        asv_ids = list(data.loc[data['taxonomy']==value].index)
-        if len(asv_ids)==1:
-            condData.loc[value, samples] = data.loc[asv_ids, samples].values
-        else:
-            sums = data.loc[asv_ids, samples].sum(axis = 0)
-            condData.loc[value, samples] = sums
-                
-    return condData
-
-
-def genTaxNames(taxcols):
-    '''Generates combined taxonomy names from individual levels'''
-    newtax = ['>'.join(list(taxcols.loc[i])) for i in list(taxcols.index)]
-    return newtax
-
-
-def topASVs(data, level, samples):
-    '''Finds the 20 most abundant ASVs at the given taxonomic level'''
-    # Add up abundance for all ASVs assigned the same taxonomy at given level
-    ds = condenseDataset(data, level, samples)
-    ds['sums'] = ds[samples].sum(axis=1)
-    # Return the 20 most abundant ASVs
-    if len(ds.index) >= 20:
-        ds = ds.nlargest(20, 'sums')
-    else: ds = ds.nlargest(len(ds.index), 'sums')
-    ds = ds[samples].sort_index()
-    return ds
-
 
 def buildCorrTable(metadata, abundance_table, samples):
     '''Build the metadata vs. taxonomic abundance table
@@ -308,7 +174,7 @@ def buildCorrTable(metadata, abundance_table, samples):
     return corrtable.astype(float)
     
 
-def buildHeatmap(ax, corrtable):
+def buildHeatmap(ax, corrtable, dset):
     '''Build the heatmap of correlation coefficients'''
     # Build the figure
     im = ax.imshow(corrtable, cmap = cmap, vmin = -1, vmax = 1)
@@ -328,7 +194,7 @@ def buildHeatmap(ax, corrtable):
     ax.tick_params(which = 'minor', bottom = False, left = False)
     
     # Add title to the plot
-    ax.set_title(gene + '-' + template + ' L' + str(level))
+    ax.set_title(dset + ' L' + str(level))
     
     # Create colorbar
     cbar = ax.figure.colorbar(im, ax = ax)
@@ -372,9 +238,8 @@ def annotateHeatmap(im, data=None, valfmt = "{x:.2f}", **textkw):
 if __name__ == '__main__':
     
     # Import Metadata table
-    metadata, directory = loadFile('Select metadata table (csv)',
-                                   header_lines = [metadata_row],
-                                   index_col = sample_col)
+    filename, directory, metadata, = RottenIceModules.fileGet(
+        'Select metadata table', tabletype = 'metadata')
     metadata = metadata.dropna(how = 'all')
     metadata = metadata.replace('na', np.nan)
     # Build matrix of metadata values
@@ -385,40 +250,68 @@ if __name__ == '__main__':
     for gene in genes:
         for template in templates:
             dset = gene + '-' + template
-            data, directory = loadFile('Select ' + dset + ' ASV table (csv)',
-                                       initialdir = directory,
-                                       header_lines = [sample_row],
-                                       index_col = ASV_col)
+            filename, directory, data = RottenIceModules.fileGet(
+                'Select ' + dset + ' ASV table', tabletype = 'OTU-table',
+                directory = directory)
             asv_tables[dset] = data
             
+    # Set up file navigation html
+    filenames = [(dset, out_filename + '_' + dset) 
+                 for dset in asv_tables]
+    nav_html = RottenIceVars.nav_html_start
+    for dset in filenames:
+        nav_html = (nav_html + ' <a href = "' + dset[1] + '.html">'
+                    + dset[0] + '</a>  /')
+    nav_html = nav_html[:-3]
+    
     # Build heatmaps
     # Loop through each dataset
     for dset in asv_tables:
-        print('*******************************************************/n'
-              'Determining Spearman correlations for ' + dset + ' dataset/n'
+        print('*******************************************************\n'
+              'Determining Spearman correlations for ' + dset + ' dataset\n'
               '*******************************************************')
+        gene = dset.split('-')[0]
+        max_level = genes[gene]['max_level']
         
         # Format data
-        data, samples = formatASVTable(asv_tables[dset])
+        data, samples = RottenIceModules.formatOTUtableData(
+            asv_tables[dset], max_level = max_level,
+            tax_reassign_list = genes[gene]['tax_reassign_list'])
+        # Get rid of any samples with no data and update the sample list ############
+        data = data.dropna(axis = 1)
+        samples = data.columns
+        non_sample_cols = ['taxonomy'] + RottenIceModules.levelCols(max_level)
+        samples = [sample for sample in samples
+                   if sample not in non_sample_cols]
+        samples = [sample for sample in samples
+                   if not any(other in sample for other in otherlist)]
+        data = data[samples + non_sample_cols]
         
         # Set up figure grid
         print('Preparing figure grid...')
-        maxlevel = genes[dset[:3]]
-        fig, axes = plt.subplots(maxlevel, 1, figsize = (20, maxlevel*8))
+        fig, axes = plt.subplots(max_level, 1,
+                                 figsize = (20, max_level * n_groups * 0.6))
         
         # Perform correlation calculations
         # and build heatmaps for each taxonomic level
         bar = Bar('Calculating at each taxonomic level...',
-                  max = maxlevel) # Progress bar
+                  max = max_level) # Progress bar
         # Loop through each taxonomic level
-        for level in np.arange(1,maxlevel+1,1):
-            # Condense the dataset to the level and return top ASVs
-            ds = topASVs(data, level, samples)
+        for level in np.arange(1,max_level+1,1):
+            # Condense the dataset to the level
+            ds = RottenIceModules.condenseDataset(data, level, samples)
+            # Normalize the dataset
+            ds = ds / ds.sum(axis = 0)
+            # Find the most abundant ASVs
+            ds['sums'] = ds.sum(axis = 1)
+            ds = ds.sort_values(by = ['sums'], ascending = False)
+            if ds.shape[0] >= n_groups:
+                ds = ds.iloc[0:n_groups-1]
             # Calculate Spearman correlation and return significant values
             corrtable = buildCorrTable(metadata, ds, samples)
             # Build heatmap
             ax = axes[level-1]
-            im = buildHeatmap(ax, corrtable)
+            im = buildHeatmap(ax, corrtable, dset)
             texts = annotateHeatmap(im, fontsize = 6)
             bar.next()
         bar.finish()
@@ -426,17 +319,16 @@ if __name__ == '__main__':
         # Save plots
         print('Saving ' + dset + ' figure files...')
         fig.tight_layout()
-        fig.savefig('spearman-heatmap_' + gene + '-' + template + '.svg',
+        filename = (out_filename + '_' + dset)
+        img_filename = filename + '.svg'
+        fig.savefig(directory + '\\' + img_filename,
                     transparent = True)
 
-        # Generate HTML for display page
-        head = ("<h1>Factors related to community changes: "
-                + gene + " " + template + " sequences</h1>")
-        subhead1 = '<p>Heatmaps at taxonomic levels 1-' + str(level)
-        imghtml = ('<p><img src = "spearman-heatmap_' + gene + '-'
-                   + template + '.svg" alt = "Spearman Heatmap ' + gene
-                   + ' ' + template + '"></p>')
-        html = linkhead + head + subhead1 + subhead2 + imghtml
-        hfile = open('spearman_' + gene + '-' + template + '.html', 'w')
-        hfile.write(html)
-        hfile.close()
+        # Generate HTML
+        RottenIceModules.genHTMLfile(
+            directory + '\\' + filename + '.html',
+            file_info['title'], subtitle_text,
+            img_filename,
+            page_nav_html = nav_html,
+            alt_text = ('Heatmaps showing Spearman correlation coefficients '
+                        + 'for metadata and abundant taxa'))

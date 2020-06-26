@@ -58,8 +58,10 @@ from progress.bar import Bar
 
 import numpy as np
 import pandas as pd
-from matplotlib import cm
 import math
+
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
 
 from bokeh.io import export_svgs
 from bokeh.models import Legend, LegendItem, Div
@@ -280,7 +282,7 @@ def condenseDataset(data, level, samples):
             header:     <samples>
             data:       sum of all ASVs for each taxonomic group and sample
     '''
-    print('Condensing dataset at L' + str(level) + '...')
+    # print('Condensing dataset at L' + str(level) + '...')
     # Generate list of unique taxonomic values at the selected level
     cols = levelCols(level)
     taxnames = genTaxName(data[cols])
@@ -316,7 +318,7 @@ def findAbundantTaxa(datasets, sample_lists, fcutoff = 0.1, max_taxa = 100):
         DataFrames must include sample name headers as well as 'taxonomy' \
             header.
             
-    samples : list of index
+    sample_lists : list of index
         List containing lists of sample names / indices (as str or index) \
             to be included in the analysis of each passed dataset.
         All sample names should also be headers in all included DataFrames.
@@ -337,7 +339,6 @@ def findAbundantTaxa(datasets, sample_lists, fcutoff = 0.1, max_taxa = 100):
     abundantTaxa = []
     # Search in each dataset
     for dataset, samples in zip(datasets, sample_lists):
-        # Find the most abundant ASVs
         # Find all ASVs with rel abundance > cutoff
         print('Finding ASVs above min fraction cutoff...')
         # Normalize data to get relative abundance values
@@ -390,6 +391,7 @@ def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
         List of samples in the dataset.
 
     '''
+    OTU_table = OTU_table.copy()
     # Get sample list
     samples = list(OTU_table.columns)[0:-1]
        
@@ -423,9 +425,9 @@ def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
                 splitlist[-1] = splitlist[-1][0:-1]
         else: splitlist = splitlist[0:-1]
             
-        for i in np.arange(len(splitlist)):
+        for L in range(1, min(len(splitlist) + 1, max_level + 1)):
             OTU_table.loc[OTU_table['taxonomy']==value,
-                          'L'+str(i+1)] = splitlist[i]
+                          'L'+str(L)] = splitlist[L-1]
             
         bar.next()
     bar.finish()
@@ -465,21 +467,20 @@ def genTaxName(taxcols):
     return taxname
 
 
-def groupTaxa(data_table, focusTaxa):
-    '''Merge taxa into new groups based on the focus taxa and "others"'''
+def groupTaxa(data_table, focusTaxa, max_level):
+    '''Merge taxa into new groups based on the focus taxa'''
     data = data_table.copy()
     excludedOthers = []
     
     # Loop through each level
-    bar = Bar('', max = 14) # Progress bar
-    for L in np.arange(1,15):
-        excludedOthers = excludedOthers + ['\nAssigning L' + str(L) + ':\n']
+    bar = Bar('', max = max_level) # Progress bar
+    for L in np.arange(1, max_level+1):
         # Get full taxonomy of any taxonomic groups
         #     with a taxonomic value at this level
         # Find non-empty values in the taxonomy column for this level
         indices = [i for i in data.index if data.loc[i]['L'+str(L)]]
         # Generate taxonomy names at this level
-        data['taxonomy'] = genTaxName(data[levelCols(L)]) 
+        data.loc['taxonomy'] = genTaxName(data[levelCols(L)]) 
         # Generate list of unique taxonomic names at this level                 
         taxlist = getUnique(data.loc[indices]['taxonomy'])
         # Remove any empty values
@@ -630,6 +631,34 @@ def colorMap2Tax(tax_set, max_level, cmap = RottenIceVars.cmap):
     cols_all_clr = ['color-L' + str(i) for i in np.arange(1,max_level+1)]        
     colormap = tax_set[cols_all_clr]
     return colormap   
+
+
+def genDivergingCmap():
+    '''Generates a diverging colormap from default colormap colors'''
+    # Pull extreme values from the default colormap
+    cmap = cm.get_cmap(RottenIceVars.cmap)
+    start = cmap(0)
+    end = cmap(0.5)
+    #center = viridis((end-start)/2+start)
+    center = (1,1,1)
+    
+    #N = 256
+    N = 1
+    n = 128
+    
+    low_vals = []
+    high_vals = []
+    
+    for i in range(3):
+        low_vals.append(np.linspace(start[i], center[i], 128))
+        high_vals.append(np.linspace(center[i], end[i], 128))
+    
+    low_vals = np.vstack(np.transpose(low_vals))
+    high_vals = np.vstack(np.transpose(high_vals))
+    newcolors = np.vstack([low_vals, high_vals])
+    
+    new_diverging = ListedColormap(newcolors, name = 'Diverging')
+    return new_diverging
 
 
 

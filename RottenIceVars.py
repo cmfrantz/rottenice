@@ -143,6 +143,33 @@ file_sets = {
         'land_page' : 'spearman/spearman_16S-DNA.html'
         }
     }
+
+
+# Indicators of 'outgroup' samples to exclude from some analyses
+other_samples = ['Blank', 'EL']
+
+# Genes sequenced in the project
+genes = {
+    '16S'   : {
+        'max_level'     : 7,
+        'tax_reassign_list'     : {
+            ('Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; D_14__')            :
+                ('Unassigned'),
+            ('D_0__Bacteria')                                       :
+                ('Bacteria; Other')
+            }
+        },
+    '18S'   : {
+        'max_level'     : 11,
+        'tax_reassign_list'     : {}
+        }
+    }
+# Templates used in the project
+templates = ['DNA', 'cDNA']
     
 # HTML Header for generating webpages
 # Page header text

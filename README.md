@@ -47,11 +47,7 @@ To install using pip, execute the command:
 <li>Test and add...
 	<ul>
 	<li>Clustermap</li>
-	</ul>
-</li>
-<li>Update scripts to run using modules...
-	<ul>
-	<li>SpearmanGrid</li>
+	<li>WebTaxBarplotsStacked</li>
 	</ul>
 </li>
 <li>Script-specific changes	
