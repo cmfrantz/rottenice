@@ -95,24 +95,21 @@ months = ['M','JN','JY11','JY10']   # Months to plot
                                     # most similar to the ice character from
                                     # prior months so is presented first for
                                     # ease of comparison
-                                    
-plotvars = {                        # Variables to plot.
-                                    # Each set plots in its own row.
-        'physical parameters':  ['temperature', 'salinity_insitu', 'salinity',
-                                 'bulk_density'],
-        'sediment':             ['SPM', 'SedLoad', 'sterivex_vol_filtered'],
-        'chemical parameters':  ['pH', 'nitrogen', 'CN'],
-        'carbon fractions':     ['DOC', 'POC', 'pEPS', 'SPM'],
-        'bacterial counts':     ['bact_cell_ct', 'CTC', 'bact_active_cell_ct'],
-        'algae counts':         ['diatom_ct', 'phyto_ct_select',
-                                 'phyto_ct_all', 'phyto_ct_other'],
-        'photosynthesis':       ['Chl', 'Phaeo', 'FoFa', 'PAM']
-        }
+
+# Variables to include in the plot, grouped by rows
+plotvars = {
+    'physical properties'   : ['temperature', 'bulk_density',
+                               'salinity_insitu', 'salinity'],
+    'chemical properties'   : ['pH', 'SPM', 'nitrogen'],
+    'carbon fractions'      : ['DOC', 'POC', 'pEPS', 'CN'],
+    'bacteria'              : ['bact_cell_ct', 'CTC', 'bact_active_cell_ct'],
+    'phytoplankton'         : ['phyto_ct_all', 'diatom_ct', 'phyto_ct_other'],
+    'photosynthesis'        : ['Chl', 'Phaeo', 'FoFa', 'PAM']
+    }
 
 # Plot formatting variables
-maxplotcols = 4     # Maximum number of columns to show on the  plot
-scalewidth = 3.5    # Factor scales plot height based on number of plot cols
-scaleheight = 7     # Factor scales plot width based on number of plot rows
+scalewidth = 1.2    # Factor scales plot width based on number of plot cols
+scaleheight = 3.5     # Factor scales plot height based on number of plot rows
 cmap = RottenIceVars.cmap # Colormap to use; see:
                     # https://matplotlib.org/tutorials/colors/colormaps.html
 
@@ -121,7 +118,7 @@ file_info = RottenIceVars.file_sets['chem_heatmaps']
 subtitle_text = ('Created from compiled project metadata using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
                  + 'ChemHeatmaps.py</a>. Analysis done by C. Frantz, '
-                 + 'June 2020.')
+                 + 'July 2020.')
 
 
 ####################
@@ -165,7 +162,7 @@ def buildSubplot(ax, var, matrix_val, matrix_std, cmap):
     '''Constructs each variable's heatmap and adds it to a subplot space'''
     # Plot heatmap
     ax.imshow(matrix_val, aspect='auto', cmap=cmap)
-      
+          
     # Annotate heatmap by looping through each dimension of the matrix plotted
     # Loop through columns (months)
     for i in range(len(months)):
@@ -177,10 +174,17 @@ def buildSubplot(ax, var, matrix_val, matrix_std, cmap):
             # Add the annotation text
             if      pd.isnull(val):    valtext = 'nan'
             elif    pd.isnull(std):    valtext = format(val,'g')
-            else:   valtext = '{: 0.2g}\n\u00B1{:0.2g}'.format(val,std)
+            else:   
+                # valtext = '{: 0.2g}\n\u00B1{:0.2g}'.format(val,std)
+                valtext = '{: 0.2g} \u00B1 {:0.2g}'.format(val,std)
             ax.text(i, j, valtext,
                     ha="center", va="center", 
                     color="lightgray", fontsize=8)
+            
+            ax.xaxis.tick_top()
+            ax.set_xlim(-0.5,len(months)-0.5)
+            ax.set_xticks(np.arange(len(months)))
+            ax.set_xticklabels(months)
     
     # Add lines to seperate sample groups
     for line in sample_groupsep:
@@ -188,7 +192,7 @@ def buildSubplot(ax, var, matrix_val, matrix_std, cmap):
                 color = 'k', linewidth = 1)
     
     # Add subplot title
-    ax.set_title(var)
+    ax.set_title(RottenIceVars.metadataFullTitle[var])
 
  #%% 
 ####
@@ -199,43 +203,45 @@ if __name__ == '__main__':
     data, infilename, directory = readMetadata()
         
     # Plot the data
-    # Set up the subplots
     print('Setting up plot field...')
     cmap = plt.get_cmap(cmap)     # Load colormap
-    fig, axs = plt.subplots(len(plotvars), maxplotcols, 
-                            sharey=True, sharex=True, 
-                            figsize = [scalewidth*len(months),
+    # Determine the maximum number of variables in a row (max columns)
+    maxplotcols = 1
+    for varset in plotvars:
+        if len(plotvars[varset])>maxplotcols:
+            maxplotcols = len(plotvars[varset])
+    # Set up the subplots
+    fig, axs = plt.subplots(len(plotvars), maxplotcols, sharey=True, 
+                            figsize = [scalewidth*len(months)*maxplotcols,
                                        scaleheight*len(plotvars)])
 
     # Generate each subplot
     # Loop through each variable set (plot rows)
-    for i, varset in enumerate(plotvars):
+    for row, varset in enumerate(plotvars):
         # Loop through each variable (plot columns)
-        for j, var in enumerate(plotvars[varset]):
-            print('Plotting ' + var)
-            # Build the matrices of averages & standard deviations
-            matrix_val = buildArray(data, var)
-            matrix_std = buildArray(data, var + '_std')
-            # Build subplot
-            buildSubplot(axs[i][j], var, matrix_val, matrix_std, cmap)
+        for col in range(maxplotcols):
+            if col<len(plotvars[varset]):
+                var = list(plotvars[varset])[col]
+                print('Plotting ' + var)
+                # Build the matrices of averages & standard deviations
+                matrix_val = buildArray(data, var)
+                matrix_std = buildArray(data, var + '_std')
+                # Build subplot
+                buildSubplot(axs[row][col], var, matrix_val, matrix_std, cmap)
+            else:
+                axs[row,col].axis('off')
     
-    # Set up x and y ticks for each month and sample fraction ...
-    print('Saving image...')
-    axs[0,0].set_xlim(-0.5,len(months)-0.5)
-    axs[0,0].set_xticks(np.arange(len(months)))
+    # Set up y ticks for each sample fraction ...
     axs[0,0].set_yticks(np.arange(len(sample_types)))
-    # ... and label them with the respective month and sample fraction
-    axs[0,0].set_xticklabels(months)
+    axs[0,0].set_ylim(len(sample_types)-0.5,-0.5)
     axs[0,0].set_yticklabels(sample_types)
-    # Rotate the tick labels and set their alignment
-    plt.setp(axs[0,0].get_xticklabels(), ha="right",
-             rotation=90, rotation_mode="anchor")
     
     # Display the image
     fig.tight_layout()
     plt.show()
 
     # Save the image
+    print('Saving image...')
     filename = file_info['pfx']
     fig.savefig(directory + '\\' + filename + ".svg", transparent=True)
     fig.savefig(directory + '\\' + filename + ".pdf", transparent=True)

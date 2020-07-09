@@ -83,30 +83,40 @@ metadataFullTitle = {
     'coord_lat'     : 'Latitude',
     'coord_lon'     : 'Longitude',
     'pH'            : 'pH',
-    'temperature'   : 'Temperature (°C)',
-    'bulk_density'  : 'Bulk ice density (' + r'$g \cdot cm^{3}$' + ')',
+    'temperature'   : 'Temperature (' + r'$\degree$' + 'C)',
+    'bulk_density'  : ('Bulk ice density (g ' + r'$\cdot$'
+                       + ' cm' + r'$^{3}$' + ')'),
     'salinity_insitu' : 'Salinity (from 5 cm pucks; ppt)',
     'salinity'      : 'Salinity (ppt)',
-    'SPM'           : 'SPM (' + r'$mg \cdot ml^{-1}$' + ')',
-    'DOC'           : 'DOC (' + r'$mg C \cdot l^{-1}$' + ')',
-    'Chl'           : 'Chlorophyll (' + r'$mg \cdot m^{3}$' + ')',
-    'Phaeo'         : 'Phaeopigments (' + r'$mg \cdot m^{3}$' + ')',
+    'SPM'           : 'SPM (mg ' + r'$\cdot$' + ' ml' + r'$^{-1}$' + ')',
+    'DOC'           : 'DOC (mg C ' + r'$\cdot$' + ' l' + r'$^{-1}$' + ')',
+    'Chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
+    'Phaeo'         : ('Phaeopigments (mg ' + r'$\cdot$'
+                       + ' m' + r'$^{3}$' + ')'),
     'Chl_Phaeo'     : '[Chl]/[Chl+Phaeo]',
     'FoFa'          : r'$F_o/F_a$',
     'PAM'           : 'PAM read',
     'SedLoad'       : 'Visible sediment load (1 low, 2 med, 3 high)',
-    'bact_cell_ct'  : 'Bacteria (' + r'$cells \cdot ml^{-1}$' + ')',
+    'bact_cell_ct'  : ('Bacteria (cells ' + r'$\cdot$' + ' ml'
+                       + r'$^{-1}$' + ')'),
     'CTC'           : 'CTC %',
-    'bact_active_cell_ct' :  'active cells (' + r'$cells \cdot ml^{-1}$' + ')',
-    'diatom_ct'     : 'Diatoms (' + r'$cells \cdot ml^{-1}$' + ')',
-    'phyto_ct_select' : ('Phytoplankton - excluding ciliates & others)'
-                         + ' \n(' + r'$cells \cdot ml^{-1}$' + ')'),
-    'phyto_ct_all'  : 'Phytoplankton (' + r'$cells \cdot ml^{-1}$' + ')',
-    'phyto_ct_other' : ('Phytoplankton - excluding diatoms)'
-                        + '\n(' + r'$cells \cdot ml^{-1}$' + ')'),
-    'pEPS'          : 'pEPS (' + r'$\mu g glucose \cdot ml^{-1}$' + ')',
-    'POC'           : 'POC (' + r'$\mu g \cdot ml^{-1}$' + ')',
-    'nitrogen'      : 'PN (' + r'$\mu g \cdot ml^{-1}$' + ')',
+    'bact_active_cell_ct' :  ('Active cells (cells ' + r'$\cdot$' + ' ml'
+                              + r'$^{-1}$' + ')'),
+    'diatom_ct'     : ('Diatoms (cells ' + r'$\cdot$' + ' ml'
+                       + r'$^{-1}$' + ')'),
+    'phyto_ct_select' : ('Phytoplankton - excluding ciliates & others'
+                         + '\n(cells ' + r'$\cdot$'
+                         + ' ml' + r'$^{-1}$' + ')'),
+    'phyto_ct_all'  : ('Phytoplankton (cells ' + r'$\cdot$'
+                       + ' ml' + r'$^{-1}$' + ')'),
+    'phyto_ct_other' : ('Phytoplankton - excluding diatoms'
+                        + '\n(cells ' + r'$\cdot$' + ' ml' + r'$^{-1}$' + ')'),
+    'pEPS'          : ('pEPS (' + r'$\mu$' + 'g glucose ' + r'$\cdot$'
+                       + ' ml' + r'$^{-1}$' + ')'),
+    'POC'           : ('POC (' + r'$\mu$' + 'g ' + r'$\cdot$'
+                       + ' ml' + r'$^{-1}$' + ')'),
+    'nitrogen'      : ('PN (' + r'$\mu$' + 'g ' + r'$\cdot$' + ' ml'
+                       + r'$^{-1}$' + ')'),
     'CN'            : 'C/N',
     'sterivex_vol_filtered' : 'Sterivex volume filtered (ml)',
     'Chl_pEPS'      : 'Ratio of Chl to pEPS',
