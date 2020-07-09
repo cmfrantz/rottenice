@@ -92,7 +92,8 @@ pltw = 5
 # Variables with numbers that require scientific notation
 vars2format = ['bact_cell_ct', 'bact_active_cell_ct']
 
-subtitle_text = ('Created from compiled project metadata using the script '
+subtitle_text = ('Metadata from whole-core melt fractions. '
+                 + 'Created from compiled project metadata using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
                  + 'MetadataWhiskerPlots.py</a>. Analysis done by C. Frantz, '
                  + 'June 2020.')
