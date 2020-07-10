@@ -61,6 +61,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
+import os
 import pandas as pd
 import seaborn as sns
 
@@ -321,10 +322,11 @@ for gene in genes:
 nav_html = nav_html[:-6] 
 
 # Load the distance matrices
+directory = os.getcwd()
 for gene in genes:
     filename, directory, distance_matrix = RottenIceModules.fileGet(
         'Select ' + gene + ' distance matrix',  file_type = 'csv',
-        header_row = 0, index_col = 0)
+        header_row = 0, index_col = 0, directory = directory)
     genes[gene]['distMatrix'] = parseSamples(distance_matrix)
 
 filepath_pfx = directory + '\\' + file_pfx
