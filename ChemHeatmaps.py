@@ -82,7 +82,7 @@ import RottenIceVars
 
 # Data to include
 site = 'CS'
-sample_types = ['HT','HM','HB',     # Sample types to plot (and their order)
+sample_types = ['HT','HM','HB',
                 'IT','IM','IB',
                 'BT','BM','BB',
                 'PW','P1','P2','SW',
