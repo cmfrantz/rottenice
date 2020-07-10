@@ -118,7 +118,7 @@ cmap = RottenIceModules.genDivergingCmap()
 # the plot so that only "significant" correlations are shown
 p_cutoff = 0.01
 # Number of taxonomic groups to consider in each plot
-n_groups = 10
+n_groups = 20
 
 # Info about file naming
 file_info = RottenIceVars.file_sets['spearman']
@@ -290,7 +290,7 @@ if __name__ == '__main__':
         # Set up figure grid
         print('Preparing figure grid...')
         fig, axes = plt.subplots(max_level, 1,
-                                 figsize = (20, max_level * n_groups * 0.6))
+                                 figsize = (20, max_level * n_groups * 0.5))
         
         # Perform correlation calculations
         # and build heatmaps for each taxonomic level
