@@ -145,7 +145,8 @@ if __name__ == '__main__':
                 var = varset[col]
                 comb_data = []
                 for n, monthset in enumerate(sets):
-                    # Grab combined data for the set of months and add it as a list item in comb_data
+                    # Grab combined data for the set of months
+                    # and add it as a list item in comb_data
                     comb_data.append(metadata.loc[samples[n], var])
                 
                 # Make whisker plot from non-nan data, hiding outliers
@@ -159,7 +160,8 @@ if __name__ == '__main__':
                 # Layer on individual points
                 for n, dataset in enumerate(comb_data):
                     for p, datapoint in enumerate(dataset):
-                        axs[row,col].plot([n+1], datapoint, **markerprops[n][p])
+                        axs[row,col].plot([n+1], datapoint,
+                                          **markerprops[n][p])
                         
                 # Add axis labels
                 xticklabels = [
@@ -168,7 +170,8 @@ if __name__ == '__main__':
                 axs[row,col].set_xticklabels(xticklabels)
                 axs[row,col].set_ylabel(RottenIceVars.metadataFullTitle[var])
                 if var in vars2format:
-                    axs[row,col].yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
+                    axs[row,col].yaxis.set_major_formatter(
+                        mtick.FormatStrFormatter('%.2e'))
     
     # Show and save the plot
     file_info = RottenIceVars.file_sets['metadata_boxplots']
