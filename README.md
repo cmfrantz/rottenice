@@ -62,6 +62,7 @@ Once python and the packages listed above are installed, to run a script from co
 ## Future fixes
 
 <ul>
+<li>Spearman analyses: Also need to normalize metadata.</li>
 <li>WebTaxBarplotsSimple: Add grouping module</li>
 <li>ChemDataPCA: Determine which metadata parameters are available (no nan) based on sample set</li>
 <li>BetaClustermap: Fix key colors</li>
