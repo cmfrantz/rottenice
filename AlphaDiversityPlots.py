@@ -74,20 +74,7 @@ import RottenIceVars
 # Variables defining what samples and metadata parameters to plot
 genes = RottenIceVars.genes
 templates = RottenIceVars.templates
-metrics = {
-    'pielou_e'  : {
-        'title'     : "Pielou's evenness",
-        'yrange'    : (0,1)
-        },
-    'shannon'   : {
-        'title'     : "Shannon's diversity index",
-        'yrange'    : (0,8)
-        },
-    'faith_pd'  : {
-        'title'     : "Faith's phylogenetic diversity",
-        'yrange'    : (0,50)
-        }
-    }
+metrics = RottenIceVars.alpha_diversity_metrics
 
 # Variables defining plot parameters
 # Plot size
