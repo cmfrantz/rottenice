@@ -107,13 +107,26 @@ subtitle_text = ('Diversity metrics for pipeline-finished, rarefied sequencing'
 
 
 
-
 ####################
 # FUNCTIONS
 ####################
 
-
-
+def buildWhiskerPlot(ax, data, samples, metric, title=''):
+    '''Builds whisker plot for the given metric'''
+    print('Plotting ' + metric + '...')
+    # Prep the data
+    sample_data = []
+    for sample in samples:
+        sample_data.append(data.loc[data['sample']==sample,
+                                    metric])
+    # Plot the data
+    ax.boxplot(sample_data)
+    ax.set_title(title)
+    ax.set_ylim(ymin = metrics[metric]['yrange'][0],
+                ymax = metrics[metric]['yrange'][1])
+    ax.set_xticklabels(samples,
+                              rotation = 'vertical', ha = 'center')
+    
 #%%
 
 ####################
@@ -143,12 +156,21 @@ if __name__ == '__main__':
         filename, directory, divdata[gene] = RottenIceModules.fileGet(
         'Select ' + gene + ' alpha diversity metrics table',
         tabletype = 'alpha-div', directory = directory)
+    
+    # Set up master (combined) figure
+    rows = len(genes) * len(metrics)
+    cols = len(templates)
+    plt.figure(1)
+    m_fig, m_axs = plt.subplots(rows, cols,
+                               figsize = (cols * pltw, rows * pltht),
+                               sharey = 'row')
         
     # Make a seperate page for each gene and template
-    for gene in genes:
-        for template in templates:
+    for i, gene in enumerate(genes):
+        for col, template in enumerate(templates):
             print('Building ' + gene + ' ' + template + ' page...')
             filename = file_pfx + '_' + gene + '_' + template
+            
             # Grab the data
             data = divdata[gene].copy()
             temp_list = [sample for sample in data.index
@@ -158,27 +180,19 @@ if __name__ == '__main__':
             samplelist = [sample.split('.')[0] for sample in temp_list]
             data['sample'] = ['-'.join(sample.split('-')[:-1])
                                    for sample in samplelist]
+            
             # Make whisker plots for each metric
             figlist = []
             alt_text = []
-            for plot, metric in enumerate(metrics):
-                print('Plotting ' + metric + '...')
-                # Prep the data
-                sample_data = []
-                for sample in sample_list:
-                    sample_data.append(data.loc[data['sample']==sample,
-                                                metric])
-                # Plot the data
+            for m, metric in enumerate(metrics):
                 fig, ax = plt.subplots(figsize = (pltw,pltht))
-                ax.boxplot(sample_data)
-                ax.set_title(gene + ' ' + template + ': ' + 
-                             metrics[metric]['title'])
-                ax.set_ylim(ymin = metrics[metric]['yrange'][0],
-                            ymax = metrics[metric]['yrange'][1])
-                ax.set_xticklabels(sample_list,
-                                          rotation = 'vertical', ha = 'center')
-                fig.tight_layout()
+                buildWhiskerPlot(
+                    ax, data, sample_list, metric,
+                    title = (gene + ' ' + template + ': ' 
+                             + metrics[metric]['title']))
+
                 # Save the figure
+                fig.tight_layout()
                 figname = filename + '_' + metric
                 fig.savefig(directory + '\\' + figname + '.pdf',
                             transparent = True)
@@ -186,10 +200,27 @@ if __name__ == '__main__':
                             transparent = True)
                 figlist.append(figname + '.svg')
                 alt_text.append(alt_text_pfx + metrics[metric]['title'])
-            # Make HTML page for each metric
+                
+                # Copy the plot to the combined figure
+                plt.figure(1)
+                m_axs[(i*len(metrics) + m)][col] = buildWhiskerPlot(
+                    m_axs[(i*len(metrics) + m)][col],
+                    data, sample_list, metric,
+                    title = (gene + ' ' + template + ': '
+                             + metrics[metric]['title']))
+                
+            # Make HTML page for each gene-template pair
             RottenIceModules.genHTMLfile(
                 directory + '\\' + filename + '.html', page_title,
                 ('<p><b>' + gene + ' ' + template + '</b><br />'
                  + subtitle_text + '</p>'),
                 figlist, alt_text = alt_text, page_nav_html = page_nav_html)
-                
+            
+    # Save the master (combined) figure
+    print('Saving master figure...')
+    plt.figure(1)
+    m_fig.tight_layout()
+    m_fig.savefig(directory + '\\' + file_pfx + '_combined.pdf',
+                  transparent = True)
+    m_fig.savefig(directory + '\\' + file_pfx + '_combined.svg',
+                  transparent = True)
