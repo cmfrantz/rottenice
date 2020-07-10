@@ -5,6 +5,7 @@ by Carie Frantz cariefrantz@weber.edu
 ## List of scripts
 <table>
 <tr><th>Script</th><th>Description</th><th>Data files used</th></tr>
+<tr><th>AlphaDiversityPlots.py</td><td>Used to generate alpha diversity metric boxplots from rarefied sequencing sample metrics</td><td>alpha_diversity_metrics_16S.csv, alpha_diversity_metrics_18S.csv</td></tr>
 <tr><td>BetaClustermaps.py</td><td>Used to generate sample clustermaps from sample distance matrices</td><td>16S_dist_matrix.csv, 18S_dist_matrix.csv</td></tr>
 <tr><td>ChemDataPCA.py</td><td>Used to generate PCA plots of physical and chemical habitat parameters</td><td>metadata.csv</td></tr>
 <tr><td>ChemHeatmaps.py</td><td>Used to generate heatmaps of sample metadata (physical, chemical, and biological measurements)</td><td>metadata.csv</td></tr>

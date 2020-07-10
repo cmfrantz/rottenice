@@ -94,13 +94,17 @@ Functions are listed alphabetically within categories:
 
 def genSampleList(months, fractions, others = [], replicates = [],
                   locations = ['CS']):
-    '''Generates a list of sample names using Rotten Ice Project sample codes
+    '''Generates a list of sample names using Rotten Ice Project sample codes;
+        list is formatted for use in tables, e.g., where months are one axis
+        and possible fractions are another. The list includes samples that
+        may not actually have data. For only real samples,
+        use genSampleListCS().
 
     Parameters
     ----------
-    months : list of str
+    months : list of str or 'all'
         Month codes to include. Options are 'M', 'JN', 'JY10', and 'JY11'.
-    horizons : list of str
+    horizons : list of str or 'all'
         Horizon codes to include, e.g., 'HT', 'HM', 'HB', 'IT', 'SW'.
     others : list of str, optional
         List of additional non-coded samples to include. The default is [].
@@ -108,6 +112,10 @@ def genSampleList(months, fractions, others = [], replicates = [],
         List of replicate codes. The default is [].
     locations : list of str, optional
         Location codes. The default is ['CS'].
+    mode : options are 'table' or 'CS_real'. Default is 'table'
+        'table' sets up a list for use in table formats where one axis is
+            a list of months and the other is a list of possible fractions.
+        'CS_real' is the actual list of CS samples.
 
     Returns
     -------
@@ -135,7 +143,25 @@ def genSampleList(months, fractions, others = [], replicates = [],
     # Add others to the end
     if others:
         samplelist = samplelist + others
+  
     return samplelist
+
+
+def genSampleListCS():
+    '''Generates a list of all sample names collected in the CS dataset'''
+    fraction_sets = RottenIceVars.fraction_sets_CS
+    month_names = RottenIceVars.months
+    samplelist = []
+    for month in fraction_sets:
+        if 'July' in month:
+            samplelist = (samplelist + [month_names[month] + '-' + fraction
+                              for fraction in fraction_sets[month]])
+        else:
+            samplelist = (samplelist
+                              + [month_names[month] + '-CS-' + fraction
+                                 for fraction in fraction_sets[month]])
+    return samplelist
+    
 
 
 def genSampleName(month, fraction, location = 'CS', replicate = ''):
@@ -147,6 +173,7 @@ def genSampleName(month, fraction, location = 'CS', replicate = ''):
         elif fraction in ['P1','P2']: fraction = 'Drain'
     else:
         loccode = month + '-' + location
+        if fraction in ['PW', 'Drain']: samplename = 'nan'
     if len(replicate)>0:
         samplename = loccode + '-' + fraction + '-' + replicate
     else:
@@ -180,7 +207,8 @@ def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
         Text to put in the user input window.
     tabletype: str
         Type of table to input.
-        Options are 'Generic' (default), 'metadata', and 'OTU-table'.
+        Options are 'Generic' (default), 'metadata', 'OTU-table',
+            and 'alpha-div'
     directory : str, optional
         The start directory to search in. The default is os.getcwd().
     file_type : str, optional
@@ -203,15 +231,12 @@ def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
     '''
     
     # If type of file is specified, use the proper format
-    if tabletype == 'metadata':
-        header_row = RottenIceVars.metadata_head_row
-        index_col = RottenIceVars.metadata_index_col
-        file_type = RottenIceVars.metadata_filetype
-    elif tabletype == 'OTU-table':
-        header_row = RottenIceVars.OTU_table_head_row
-        index_col = RottenIceVars.metadata_index_col
-        file_type = RottenIceVars.metadata_filetype
-    
+    if tabletype in ['metadata', 'OTU-table', 'alpha-div']:
+        table_fmt = RottenIceVars.data_table_fmts[tabletype]
+        header_row = table_fmt['head_row']
+        index_col = table_fmt['index_col']
+        file_type = table_fmt['filetype']
+        
     # Define filetypes
     if file_type == 'csv':
         ftype = [('CSV', '*.csv')]

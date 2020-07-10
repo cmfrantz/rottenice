@@ -32,6 +32,33 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
 
+# Data
+genes = ['16S', '18S']
+templates = ['DNA', 'cDNA']
+months = {
+    'May'   : 'M',
+    'June'  : 'JN',
+    'July 10' : 'JY10',
+    'July 11' : 'JY11'
+    }
+fraction_sets_CS = {
+    'May'       : ['HT', 'HM', 'HB',
+                   'IT', 'IM', 'IB',
+                   'BT', 'BM', 'BB',
+                   'P1', 'P2', 'SW'],
+    'June'      : ['HT', 'HM', 'HB',
+                   'IT', 'IM', 'IB',
+                   'BT', 'BM', 'BB',
+                   'P1', 'P2', 'SW'],
+    'July 10'   : ['HT', 'HM', 'HB',
+                   'IT', 'IM', 'IB',
+                   'B', 'Drain', 'PW'],
+    'July 11'   : ['HT', 'HM', 'HB',
+                   'IT', 'IM', 'IB',
+                   'Drain', 'SW']
+    }
+    
+
 # Colors
 cmap = 'viridis'    # Change this to change the default colormap
 cmaptext = ''''Choose a colormap, e.g.,
@@ -67,14 +94,23 @@ plotMarkerBorderByMonth = {
 
 
 # Data file format info
-# Metadata file
-metadata_head_row = 2       # Row in table containing unique variable names
-metadata_index_col = 0      # Row in table containing unique sample names
-metadata_filetype = 'csv'
-# OTU (ASV) tables
-OTU_table_head_row = 0      # Row in table containing unique sample names
-OTU_table_index_col = 0     # Columnin table containing unique OTU IDs
-OTU_table_filetype = 'csv'
+data_table_fmts = {
+    'metadata'  : {
+        'head_row'  : 2,
+        'index_col' : 0,
+        'filetype'  : 'csv'
+        },
+    'OTU-table' : {
+        'head_row'  : 0,
+        'index_col' : 0,
+        'filetype'  : 'csv'
+        },
+    'alpha-div' : {
+        'head_row'  : 0,
+        'index_col' : 0,
+        'filetype'  : 'csv'
+        }
+    }
 
 
 # Metadata variable full titles
@@ -142,6 +178,10 @@ file_sets = {
         'pfx'       : 'ASV_barplots',
         'land_page' : 'ASV-barplots/ASV_barplots_16S_L1_viridis.html'
         },
+    'alpha_metrics'         : {
+        'title'     : 'Alpha diversity metrics',
+        'pfx'       : 'alpha_boxplots',
+        'land_page' : 'alpha-div/alpha_boxplots_16S_DNA.html'},
     'beta_cluster'          : {
         'title'     : 'Beta diversity sample cluster heatmaps',
         'pfx'       : 'beta_clustermap',
