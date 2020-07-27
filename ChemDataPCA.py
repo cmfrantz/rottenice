@@ -82,7 +82,7 @@ import RottenIceModules
 ####################
 
 # List of parameters that can be used for PCA
-featlist = ["temperature", "salinity", "bulk_density",
+featlist = ["temperature", "salinity_comb", "bulk_density",
             "DOC", "POC", "pEPS", "nitrogen", "CN",
             "Chl", "Phaeo", "FoFa", "PAM",
             "bact_cell_ct", "CTC", "bact_active_cell_ct",

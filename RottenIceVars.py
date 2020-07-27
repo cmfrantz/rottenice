@@ -32,8 +32,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
 
-# Data
-genes = ['16S', '18S']
+# Datasets
 templates = ['DNA', 'cDNA']
 months = {
     'May'   : 'M',
@@ -41,6 +40,8 @@ months = {
     'July 10' : 'JY10',
     'July 11' : 'JY11'
     }
+
+# Available samples collected each month for the CS dataset
 fraction_sets_CS = {
     'May'       : ['HT', 'HM', 'HB',
                    'IT', 'IM', 'IB',
@@ -56,6 +57,46 @@ fraction_sets_CS = {
     'July 11'   : ['HT', 'HM', 'HB',
                    'IT', 'IM', 'IB',
                    'Drain', 'SW']
+    }
+
+# Indicators of 'outgroup' samples to exclude from some analyses
+other_samples = ['Blank', 'EL']
+
+# Genes sequenced in the project
+genes = {
+    '16S'   : {
+        'max_level'     : 7,
+        'tax_reassign_list'     : {
+            ('Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
+             + 'Ambiguous_taxa; Ambiguous_taxa; D_14__')            :
+                ('Unassigned'),
+            ('D_0__Bacteria')                                       :
+                ('Bacteria; Other')
+            }
+        },
+    '18S'   : {
+        'max_level'     : 11,
+        'tax_reassign_list'     : {}
+        }
+    }
+
+# Alpha diversity metrics calculated
+alpha_diversity_metrics = {
+    'pielou_e'  : {
+        'title'     : "Pielou's evenness",
+        'yrange'    : (0,1)
+        },
+    'shannon'   : {
+        'title'     : "Shannon's diversity index",
+        'yrange'    : (0,8)
+        },
+    'faith_pd'  : {
+        'title'     : "Faith's phylogenetic diversity",
+        'yrange'    : (0,50)
+        }
     }
     
 
@@ -113,6 +154,9 @@ data_table_fmts = {
     }
 
 
+# Statistical preferences
+p_cutoff = 0.05
+
 # Metadata variable full titles
 metadataFullTitle = {
     'day_num'       : 'Calendar day',
@@ -122,8 +166,10 @@ metadataFullTitle = {
     'temperature'   : 'Temperature (' + r'$\degree$' + 'C)',
     'bulk_density'  : ('Bulk ice density (g ' + r'$\cdot$'
                        + ' cm' + r'$^{3}$' + ')'),
-    'salinity_insitu' : 'Salinity (from 5 cm pucks; ppt)',
-    'salinity'      : 'Salinity (ppt)',
+    'salinity_direct' : 'Salinity (from 5 cm puck direct melts; ppt)',
+    'salinity_lab'  : ('Salinity (from lab melts; whole-horizon melts are '
+                       + 'mixed with ASW; ppt)'),
+    'salinity_comb' : 'Salinity (ppt)',
     'SPM'           : 'SPM (mg ' + r'$\cdot$' + ' ml' + r'$^{-1}$' + ')',
     'DOC'           : 'DOC (mg C ' + r'$\cdot$' + ' l' + r'$^{-1}$' + ')',
     'Chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
@@ -186,40 +232,21 @@ file_sets = {
         'title'     : 'Beta diversity sample cluster heatmaps',
         'pfx'       : 'beta_clustermap',
         'land_page' : 'B-div-heatmaps/beta_clustermap_16S_all.html'},
-    'spearman'              : {
+    'spearman_taxonomy'     : {
         'title'     : ('Metadata vs. taxonomic group '
                        + 'Spearman correlation analysis'),
         'pfx'       : 'spearman',
         'land_page' : 'spearman/spearman_16S-DNA.html'
-        }
-    }
-
-
-# Indicators of 'outgroup' samples to exclude from some analyses
-other_samples = ['Blank', 'EL']
-
-# Genes sequenced in the project
-genes = {
-    '16S'   : {
-        'max_level'     : 7,
-        'tax_reassign_list'     : {
-            ('Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-             + 'Ambiguous_taxa; Ambiguous_taxa; Ambiguous_taxa; '
-             + 'Ambiguous_taxa; Ambiguous_taxa; D_14__')            :
-                ('Unassigned'),
-            ('D_0__Bacteria')                                       :
-                ('Bacteria; Other')
-            }
         },
-    '18S'   : {
-        'max_level'     : 11,
-        'tax_reassign_list'     : {}
+    'spearman_diversity'    : {
+        'title'     : ('Metadata vs. diversity '
+                       + 'Spearman correlation analysis'),
+        'pfx'       : 'spearman_div',
+        'land_page' : 'spearman/spearman_div.html'
         }
     }
-# Templates used in the project
-templates = ['DNA', 'cDNA']
+
+
     
 # HTML Header for generating webpages
 # Page header text
