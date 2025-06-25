@@ -12,6 +12,7 @@ by Carie Frantz cariefrantz@weber.edu
 <tr><td>SpearmanGrid.py</td><td>Used to generate a heatmap grid of Spearman correlation coefficients for metadata vs. taxonomic group abundance</td><td>metadata.csv, 16S_cDNA_ASV-table.csv, 18S_cDNA_ASV-table.csv</td></tr>
 <tr><td>WebTaxBarplotsSimple.py</td><td>Used to generate interactive side-by-side bokeh taxonomic bar plots (web-based) from algae taxonomy data. Results at different taxonomic levels are built in as tabs.</td><td>AlgaeIDs.csv</td></tr>
 <tr><td>WebTaxBarplotsStacked.py</td><td>Used to generate interactive stacked bokeh taxonomic bar plots (web-based) from Illumina sequencing data. Plots for absolute and relative abundance for both DNA and cDNA are stacked for ease of comparison.</td><td>16S_DNA_ASV-table.csv, 16S_cDNA_ASV-table.csv, 18S_DNA_ASV-table.csv, 18S_cDNA_ASV-table.csv</td></tr>
+<tr><td>pcoa.py</td><td>Generates PCoA plots split out and coded by metadata from pcoa ordinate data.</td><td>ordination.txt</td></tr>
 </table>
 
 ## Shared scripts
