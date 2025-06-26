@@ -35,10 +35,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 # Datasets
 templates = ['DNA', 'cDNA']
 months = {
-    'May'   : 'M',
-    'June'  : 'JN',
-    'July 10' : 'JY10',
-    'July 11' : 'JY11'
+    'May'       : 'M',
+    'June'      : 'JN',
+    'July 10'   : 'JY10',
+    'July 11'   : 'JY11'
     }
 
 # Available samples collected each month for the CS dataset
@@ -170,6 +170,7 @@ metadataFullTitle = {
     'salinity_lab'  : ('Salinity (from lab melts; whole-horizon melts are '
                        + 'mixed with ASW; ppt)'),
     'salinity_comb' : 'Salinity (ppt)',
+    'salinity'      : 'Salinity (ppt)',
     'SPM'           : 'SPM (mg ' + r'$\cdot$' + ' ml' + r'$^{-1}$' + ')',
     'DOC'           : 'DOC (mg C ' + r'$\cdot$' + ' l' + r'$^{-1}$' + ')',
     'Chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
@@ -202,7 +203,12 @@ metadataFullTitle = {
     'CN'            : 'C/N',
     'sterivex_vol_filtered' : 'Sterivex volume filtered (ml)',
     'Chl_pEPS'      : 'Ratio of Chl to pEPS',
-    'CTC_pEPS'      : 'Ratio of %CTC to pEPS'
+    'CTC_pEPS'      : 'Ratio of %CTC to pEPS',
+    'gels_total'    : 'Gel count per mL',
+    'gels_sm'       : 'Gel % < 0.5 ' + r'$\mu$' + 'm',
+    'gels_md'       : 'Gel % < 1 ' + r'$\mu$' + 'm',
+    'gels_lg'       : 'Gel % > 1 ' + r'$\mu$' + 'm',
+    'gels_xl'       : 'Gel % > 10 ' + r'$\mu$' + 'm'    
     }
 
 # Types of files and info about them

@@ -76,14 +76,15 @@ import RottenIceVars
 # Variables defining what samples and metadata parameters to plot
 sets = [['M'],['JN'],['JY10'],['JY11'],['M','JN'],['JY10','JY11']]
 fractions = ['HT','HM','HB']
-varlist = [['temperature','salinity','bulk_density'],
+varlist = [['temperature','salinity_comb','bulk_density'],
            ['SPM', 'nitrogen','CN'],
-           ['DOC','pEPS','POC'],
-           ['Chl','Phaeo','Chl_Phaeo'],
+           ['DOC','POC','pEPS'],
+           ['Chl','Phaeo'],
            ['FoFa','PAM'],
            ['bact_cell_ct', 'CTC', 'bact_active_cell_ct'],
            ['phyto_ct_all', 'diatom_ct', 'phyto_ct_other'],
-           ['Chl_pEPS', 'CTC_pEPS']]
+           ['gels_total','gels_sm','gels_md'],
+           ['gels_lg','gels_xl']]
 
 # Variables defining plot parameters
 # Plot size
@@ -96,7 +97,7 @@ subtitle_text = ('Metadata from whole-core melt fractions. '
                  + 'Created from compiled project metadata using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
                  + 'MetadataWhiskerPlots.py</a>. Analysis done by C. Frantz, '
-                 + 'June 2020.')
+                 + 'June 2025.')
 
 
 

@@ -98,13 +98,14 @@ months = ['M','JN','JY11','JY10']   # Months to plot
 
 # Variables to include in the plot, grouped by rows
 plotvars = {
-    'physical properties'   : ['temperature', 'bulk_density',
-                               'salinity_insitu', 'salinity'],
-    'chemical properties'   : ['pH', 'SPM', 'nitrogen'],
-    'carbon fractions'      : ['DOC', 'POC', 'pEPS', 'CN'],
+    'physical properties'   : ['temperature', 'bulk_density', 'salinity_comb',
+                               'SedLoad'],
     'bacteria'              : ['bact_cell_ct', 'CTC', 'bact_active_cell_ct'],
     'phytoplankton'         : ['phyto_ct_all', 'diatom_ct', 'phyto_ct_other'],
-    'photosynthesis'        : ['Chl', 'Phaeo', 'FoFa', 'PAM']
+    'photosynthesis'        : ['Chl', 'Phaeo', 'FoFa', 'PAM'],
+    'chemical properties'   : ['pH', 'SPM', 'nitrogen', 'CN'],
+    'carbon fractions'      : ['DOC', 'POC', 'pEPS', 'gels_total'],
+    'gels'                  : ['gels_sm', 'gels_md', 'gels_lg', 'gels_xl']
     }
 
 # Plot formatting variables
@@ -118,7 +119,7 @@ file_info = RottenIceVars.file_sets['chem_heatmaps']
 subtitle_text = ('Created from compiled project metadata using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
                  + 'ChemHeatmaps.py</a>. Analysis done by C. Frantz, '
-                 + 'July 2020.')
+                 + 'June 2025.')
 
 
 ####################
@@ -145,9 +146,14 @@ def buildArray(data, var):
             samples = [RottenIceModules.genSampleName(month, fraction) 
                        for fraction in sample_types]
             # Grab and paste in the data for that month
-            vals = [float(val) for val in data.loc[samples,var].values]
+            # vals = [float(val) for val in data.loc[samples,var].values]
+            vals = [
+                float(data.loc[sample, var]) if sample in data.index else np.nan
+                      for sample in samples]
             valueMatrix.loc[:,month] = vals
     else: print(var + ' is not a valid variable')
+    # Force valueMatrix to be numeric
+    valueMatrix = valueMatrix.apply(pd.to_numeric, errors = 'coerce')
     return valueMatrix
             
                

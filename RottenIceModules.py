@@ -242,7 +242,7 @@ def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
         ftype = [('CSV', '*.csv')]
         sep = ','
     elif file_type == 'tsv':
-        ftype = [('TSV', '*.tsv, *.txt')]
+        ftype = [('TSV', '*.tsv;*.txt')]
         sep = '\t'
     
     # Open user input file dialog to pick file
