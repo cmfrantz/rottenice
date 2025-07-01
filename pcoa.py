@@ -32,6 +32,9 @@ materialmap = {
     'I'     : 'ice-only',
     'H'     : 'whole horizon',
     'B'     : 'brine',
+    'P'     : 'percolate',
+    'D'     : 'drain',
+    'PW'    : 'pondwater',
     'SW'    : 'seawater'
 }
 
@@ -43,10 +46,13 @@ marker_map_horizon = {
     }
 
 color_map_fraction = {
-    'I'         : '#0072b2',
-    'H'         : '#cc79a7',
-    'B'         : '#d55e00',
-    'SW'        : '#009e73'
+    'I'         : '#2066a8',
+    'H'         : '#f6d6c2',
+    'B'         : '#d47264',
+    'P'         : '#B05F53',
+    'D'         : '#874940',
+    'PW'        : '#b5d1ae',
+    'SW'        : '#326b77',
     }
 
 color_map_month = {
@@ -320,7 +326,7 @@ def plot2Dpcoa(
         
         legend_size = plt.legend(
             handles = size_legend, title = md_size,
-            loc='upper left', frameon = False, bbox_to_anchor = (1.01, 0.4))
+            loc='upper left', frameon = False, bbox_to_anchor = (1.01, 0.3))
     
     # Add the legends to the axes
     ax = plt.gca()
@@ -420,11 +426,11 @@ for g in genemap:
     # Seperate plot for each month
     for f in monthmap:
         # Extract the samples
-        df = cs[cs['loc_id']==m]
+        df = cs[cs['loc_id']==f]
     
         plot2Dpcoa(
             df, expvals,
-            title = g + ' ' + monthmap[m] + ' Weighted Unifrac',
+            title = g + ' ' + monthmap[f] + ' Weighted Unifrac',
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_fraction, md_color = 'material',
