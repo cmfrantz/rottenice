@@ -3,6 +3,53 @@
 Created on Mon Jun 23 12:36:02 2025
 
 @author: cariefrantz
+@project: RottenIce
+
+GENERATES 2D PCOA PLOT COLLECTION
+
+This script generates a collection of PCoA plots split out by month (all
+fractions) and horizon (all months) for 16S and 18S community data.
+
+This script was created as part of the Rotten Ice Project
+
+Arguments:  None
+
+Requirements:   
+    Metadata table (tsv)
+        where rows = samples, columns = metadata characteristics
+        unlike the other scrips in this RottenIce collection, the metadata
+        file used here is the raw tsv used in QIIME2
+        
+    PCoA ordinate tables (tsv) for the 16S and 18S data
+        The PCoA ordinate table should be exported from QIIME2:
+            qiime tools export \
+            # --input-path pcoa.qza \
+            # --output-path directory/export
+
+Example in command line:
+    python pcoa.py
+
+Dependencies Install:
+    sudo apt-get install python3-pip python3-dev
+    pip install tkinter
+    pip install pandas
+    pip install matplotlib
+
+
+Copyright (C) 2025  Carie M. Frantz
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
 
 ####################
@@ -42,6 +89,7 @@ marker_map_horizon = {
     'top'       : '^',
     'middle'    : 's',
     'bottom'    : 'v',
+    'whole'     : 'h',
     'water'     : 'o'
     }
 
@@ -134,11 +182,6 @@ def prepMetadataWpcoa(metadata, title = '', directory = os.getcwd()):
     '''
     Select the pcoa file and add to a metadata table. Opens a user interface
     to select files.
-    
-    The PCoA coordinate table should be exported from QIIME2:
-        qiime tools export \
-        # --input-path pcoa.qza \
-        # --output-path directory/export
     
     Parameters
     ----------
