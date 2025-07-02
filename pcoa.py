@@ -82,7 +82,8 @@ materialmap = {
     'P'     : 'percolate',
     'D'     : 'drain',
     'PW'    : 'pondwater',
-    'SW'    : 'seawater'
+    'SW'    : 'seawater',
+    'BW'    : 'below-ice water'
 }
 
 marker_map_horizon = {
@@ -101,6 +102,7 @@ color_map_fraction = {
     'D'         : '#874940',
     'PW'        : '#b5d1ae',
     'SW'        : '#326b77',
+    'BW'        : '#A799B7'
     }
 
 color_map_month = {
@@ -398,9 +400,12 @@ pcoa_md_16S, expvals_16S, pcoa_minmax_16S = prepMetadataWpcoa(
     metadata, title = '16S', directory = directory)
 pcoa_md_18S, expvals_18S, pcoa_minmax_18S = prepMetadataWpcoa(
     metadata, title = '18S', directory = directory)
-genemap = {
+pcoa_md_PP, expvals_PP, pcoa_minmax_PP = prepMetadataWpcoa(
+    metadata, title = '18S Primary Producers', directory = directory)
+dsetmap = {
     '16S' : [pcoa_md_16S, expvals_16S, pcoa_minmax_16S],
-    '18S' : [pcoa_md_18S, expvals_18S, pcoa_minmax_18S]
+    '18S' : [pcoa_md_18S, expvals_18S, pcoa_minmax_18S],
+    'Primary Producers' : [pcoa_md_PP, expvals_PP, pcoa_minmax_PP]
     }
 
 
@@ -410,20 +415,20 @@ genemap = {
 #           to look for differences by month
 
 # Seperate plots for each gene (16S, 18S)
-for g in genemap:
+for d in dsetmap:
     
     # Retrieve data for the gene
-    md = genemap[g][0]
-    expvals = genemap[g][1]
-    xlim = genemap[g][2].loc['pcoa_1',['min','max']]
-    ylim = genemap[g][2].loc['pcoa_2',['min','max']]
+    md = dsetmap[d][0]
+    expvals = dsetmap[d][1]
+    xlim = dsetmap[d][2].loc['pcoa_1',['min','max']]
+    ylim = dsetmap[d][2].loc['pcoa_2',['min','max']]
     
     # Only Chukchi Sea samples
     cs = md[md['loc'].isin(['CS', 'JY10', 'JY11'])]
     
     # Plot all fractions together
     plot2Dpcoa(
-        cs, expvals, title = g + ' All fractions Weighted Unifrac',
+        cs, expvals, title = d + ' All fractions Weighted Unifrac',
         xlim = xlim, ylim = ylim,
         marker_map = marker_map_horizon, md_marker = 'horizon',
         color_map = color_map_month, md_color = 'month',
@@ -436,7 +441,7 @@ for g in genemap:
     
         plot2Dpcoa(
             df, expvals,
-            title = g + ' ' + materialmap[m] + ' Weighted Unifrac',
+            title = d + ' ' + materialmap[m] + ' Weighted Unifrac',
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_month, md_color = 'month',
@@ -449,18 +454,18 @@ for g in genemap:
 #           to look for month differences
 
 # Seperate plots for each gene (16S, 18S)
-for g in genemap:
+for d in dsetmap:
     
-    md = genemap[g][0]
-    expvals = genemap[g][1]
-    xlim = genemap[g][2].loc['pcoa_1',['min','max']]
-    ylim = genemap[g][2].loc['pcoa_2',['min','max']]
+    md = dsetmap[d][0]
+    expvals = dsetmap[d][1]
+    xlim = dsetmap[d][2].loc['pcoa_1',['min','max']]
+    ylim = dsetmap[d][2].loc['pcoa_2',['min','max']]
     
     # Plot all horizons together
     # Only Chukchi Sea samples
     cs = md[md['loc'].isin(['CS', 'JY10', 'JY11'])]
     plot2Dpcoa(
-        cs, expvals, title = g + ' All months Weighted Unifrac',
+        cs, expvals, title = d + ' All months Weighted Unifrac',
         xlim = xlim, ylim = ylim,
         marker_map = marker_map_horizon, md_marker = 'horizon',
         color_map = color_map_fraction, md_color = 'material',
@@ -473,7 +478,7 @@ for g in genemap:
     
         plot2Dpcoa(
             df, expvals,
-            title = g + ' ' + monthmap[f] + ' Weighted Unifrac',
+            title = d + ' ' + monthmap[f] + ' Weighted Unifrac',
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_fraction, md_color = 'material',
