@@ -244,9 +244,9 @@ def prepMetadataWpcoa(metadata, title = '', directory = os.getcwd()):
 
 def plot2Dpcoa(
         metadataWpcoa, pcoa_expvals, title = '', xlim = None, ylim = None,
-        marker_map = [], md_marker = None,
-        color_map = [], md_color = None,
-        size_map = [], md_size = None):
+        marker_map = False, md_marker = None,
+        color_map = False, md_color = None,
+        size_map = False, md_size = None):
     '''
     Creates a 2D PCoA plot of data using Matplotlib
     
@@ -265,17 +265,17 @@ def plot2Dpcoa(
     ylim : list of float, optional
         Y-axis limits. Default is None, which does not specify a limit.
     marker_map : dict of str, optional
-        Dictionary mapping metadata values to marker types. Default is [].
+        Dictionary mapping metadata values to marker types. Default is False.
         If a map is provided, md_marker must be defined.
     md_marker : str or None, optional
         Metadata column used to define the markers. Default is None.
     color_map : dict of str, optional
-        Dictionary mapping metadata values to colors. Default is [].
+        Dictionary mapping metadata values to colors. Default is False.
         If a map is provided, md_color must be defined.
     md_color : str or None, optional
         Metadata column used to define the colors. Default is None.
     size_map : dict of int, optional
-        Dictionary mapping metadata values to marker sizes. Default is [].
+        Dictionary mapping metadata values to marker sizes. Default is False.
         If a map is provided, md_size must be defined.
     md_size : str or None, optional
         Metadata column used to define the marker size. Default is None.
@@ -324,17 +324,17 @@ def plot2Dpcoa(
     # Add the plot labels
     plt.title(title)
     plt.xlabel(
-        'PCoA-1 (' + str(round(float(pcoa_expvals[0]),3)*100)
+        'PCoA-1 (' + f'{float(pcoa_expvals[0])*100:.1f}'
         + '% variance explained)')
     plt.ylabel(
-        'PCoA-2 (' + str(round(float(pcoa_expvals[1]),3)*100)
+        'PCoA-2 (' + f'{float(pcoa_expvals[1])*100:.1f}'
         + '% variance explained)')
     
     # Fix the axis limits
     if xlim is not None and len(xlim) == 2:
-        plt.xlim(xlim[0], xlim[1])
+        plt.xlim(xlim.iloc[0], xlim.iloc[1])
     if ylim is not None and len(ylim) == 2:
-        plt.ylim(ylim[0], ylim[1])
+        plt.ylim(ylim.iloc[0], ylim.iloc[1])
 
     # Add the legends
     
@@ -373,10 +373,14 @@ def plot2Dpcoa(
             handles = size_legend, title = md_size,
             loc='upper left', frameon = False, bbox_to_anchor = (1.01, 0.3))
     
-    # Add the legends to the axes
-    ax = plt.gca()
-    ax.add_artist(legend_mkr)
-    ax.add_artist(legend_clr)
+        # Add the legends to the axes
+        ax = plt.gca()
+        ax.add_artist(legend_mkr)
+        ax.add_artist(legend_clr)
+    else:
+        ax = plt.gca()
+        ax.add_artist(legend_mkr)
+        
     
     
     plt.subplots_adjust(right=0.8)
@@ -432,7 +436,9 @@ for d in dsetmap:
         xlim = xlim, ylim = ylim,
         marker_map = marker_map_horizon, md_marker = 'horizon',
         color_map = color_map_month, md_color = 'month',
-        size_map = size_map_template, md_size = 'template')
+        #size_map = size_map_template, md_size = 'template'
+        # for cDNA-only plots, comment out the line above
+        )
     
     # Seperate plot for each fraction
     for m in materialmap:
@@ -445,7 +451,9 @@ for d in dsetmap:
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_month, md_color = 'month',
-            size_map = size_map_template, md_size = 'template')
+            #size_map = size_map_template, md_size = 'template'
+            # for cDNA-only plots, comment out the line above
+            )
 
 
 ####################
@@ -469,7 +477,9 @@ for d in dsetmap:
         xlim = xlim, ylim = ylim,
         marker_map = marker_map_horizon, md_marker = 'horizon',
         color_map = color_map_fraction, md_color = 'material',
-        size_map = size_map_template, md_size = 'template')
+        #size_map = size_map_template, md_size = 'template'
+        # for cDNA-only plots, comment out the line above
+        )
     
     # Seperate plot for each month
     for f in monthmap:
@@ -482,7 +492,9 @@ for d in dsetmap:
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_fraction, md_color = 'material',
-            size_map = size_map_template, md_size = 'template')
+            #size_map = size_map_template, md_size = 'template'
+            # for cDNA-only plots, comment out the line above
+            )
 
 
 
