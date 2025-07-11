@@ -14,6 +14,7 @@ by Carie Frantz cariefrantz@weber.edu
 <tr><td>WebTaxBarplotsStacked.py</td><td>Used to generate interactive stacked bokeh taxonomic bar plots (web-based) from Illumina sequencing data. Plots for absolute and relative abundance for both DNA and cDNA are stacked for ease of comparison.</td><td>16S_DNA_ASV-table.csv, 16S_cDNA_ASV-table.csv, 18S_DNA_ASV-table.csv, 18S_cDNA_ASV-table.csv</td></tr>
 <tr><td>pcoa.py</td><td>Generates PCoA plots split out and coded by metadata from pcoa ordinate data.</td><td>ordination.txt</td></tr>
 <tr><td>displot_TMB.py</td><td>Generates box-and-whisker plots comparing community distances in different ice horizons during different months to assess vertical homogenization.</td><td>distance-matrix.tsv</td></tr>
+<tr><td>MetadataPCA.py</td><td>Generates PCA biplots comparing samples based on their metadata. Displays vectors showing how different metadata parameters influence the principal components.</td><td>metadata.tsv</td></tr>
 </table>
 
 ## Shared scripts
