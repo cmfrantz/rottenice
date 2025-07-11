@@ -13,6 +13,7 @@ by Carie Frantz cariefrantz@weber.edu
 <tr><td>WebTaxBarplotsSimple.py</td><td>Used to generate interactive side-by-side bokeh taxonomic bar plots (web-based) from algae taxonomy data. Results at different taxonomic levels are built in as tabs.</td><td>AlgaeIDs.csv</td></tr>
 <tr><td>WebTaxBarplotsStacked.py</td><td>Used to generate interactive stacked bokeh taxonomic bar plots (web-based) from Illumina sequencing data. Plots for absolute and relative abundance for both DNA and cDNA are stacked for ease of comparison.</td><td>16S_DNA_ASV-table.csv, 16S_cDNA_ASV-table.csv, 18S_DNA_ASV-table.csv, 18S_cDNA_ASV-table.csv</td></tr>
 <tr><td>pcoa.py</td><td>Generates PCoA plots split out and coded by metadata from pcoa ordinate data.</td><td>ordination.txt</td></tr>
+<tr><td>displot_TMB.py</td>Generates box-and-whisker plots comparing community distances in different ice horizons during different months to assess vertical homogenization.</td><td>distance-matrix.tsv</td></tr>
 </table>
 
 ## Shared scripts
