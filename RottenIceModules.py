@@ -59,7 +59,10 @@ from progress.bar import Bar
 import numpy as np
 import pandas as pd
 import math
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
+import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 
@@ -84,6 +87,7 @@ Functions are listed alphabetically within categories:
     * Colors
     * Plots - General
     * Plots - Bokeh
+    * Plots - PCA
     * HTML
     
 '''    
@@ -292,8 +296,8 @@ def condenseDataset(data, level, samples):
     ----------
     data : DataFrame
         ASV table dataset with taxonomy calls:
-            index:      ASV IDs
-            headers:    <samples> + 'taxonomy' + any others
+            index:      taxonomy
+            headers:    <samples> + any others
     level : int
         Taxonomic level to condense the dataset to.
     samples : list
@@ -307,6 +311,14 @@ def condenseDataset(data, level, samples):
             header:     <samples>
             data:       sum of all ASVs for each taxonomic group and sample
     '''
+    
+    # Split out the taxonomy into levels
+    tax_split = data.index.to_series().str.split(';', expand=True)
+    tax_clean = tax_split.applymap(
+        lambda x: x.split('__')[1] if '__' in x else '')
+    tax_clean.columns = [f'L{i+1}' for i in range(tax_clean.shape[1])]
+    data[tax_clean.columns] = tax_clean
+    
     # print('Condensing dataset at L' + str(level) + '...')
     # Generate list of unique taxonomic values at the selected level
     cols = levelCols(level)
@@ -389,9 +401,148 @@ def findAbundantTaxa(datasets, sample_lists, fcutoff = 0.1, max_taxa = 100):
     return abundantTaxa
 
 
+def formatASVTable(ASV_table, tax_levels, max_level=7):
+    '''
+    Formats an ASV table by breaking down taxonomy into individual columns
+    and normalizing counts to be relative abundance
 
+    Parameters
+    ----------
+    ASV_table : pandas.DataFrame
+        DataFrame containing the ASV table, where index = taxonomic calls for
+        the ASVs, columns = sample names.
+    tax_levels: list of str
+        list naming the different taxonomic levels, to be used as col headers
+    max_level : int
+        Number of the maximum taxonomic level to analyze. Default = 7 (species)
+
+    Returns
+    -------
+    ASVTable : pandas.DataFrame
+        Formatted ASV table.
+    samples : list of str
+        List of samples in the inputted ASV_table
+
+    '''
+    ASVTable = ASV_table.copy().astype(float).dropna(axis=0)
+    
+    # Normalize the data (to get relative vs. absolute abundances)
+    for column in ASVTable.columns:
+        ASVTable[column] = ASVTable[column].values/ASVTable[column].sum()
+    
+    # Add taxonomy level columns    
+    samples = list(ASVTable.columns)
+    ASVTable[tax_levels[0:max_level]] = ''
+    
+    # Format taxonomy list and break into levels
+    print('Formatting taxonomy...')
+    bar = Bar("", max = len(ASVTable.index))
+    for ASV in ASVTable.index:
+        splitlist = ASV.split(';')
+        splitlist = splitlist[0:max_level]
+        for i,s in enumerate(splitlist):
+            if s == '__':
+                splitlist[i]=''
+            else:
+                splitlist[i]=s[3:]
+            ASVTable.loc[ASV,tax_levels[i]] = '; '.join(splitlist[:i+1])
+        bar.next()
+    bar.finish()
+
+    
+    return ASVTable, samples
+
+
+def condenseASVTable_by_TaxLevel(formatted_ASV_table,levels,samples):
+    '''
+    Generates new ASV tables grouped by taxa at different taxonomic levels
+
+    Parameters
+    ----------
+    formatted_ASV_table : pandas.DataFrame
+        ASV table passed through the formatASVTable script.
+    levels : list of str
+        List of taxonomic levels (column headers in formatted_ASV_table) to
+        condense.
+    samples : list of str
+        List of samples to include in the condensed ASV table.
+
+    Returns
+    -------
+    tables : TYPE
+        DESCRIPTION.
+
+    '''
+    tables = {}
+    for level in levels:
+        print('Condensing dataset at level ' + level + '...')
+        # Generate list of unique taxa at the selected level
+        taxlist = np.unique(formatted_ASV_table[level])
+        
+        # Set up a new condensed table
+        table_cond = pd.DataFrame(data=None, index=taxlist, columns=samples)
+        
+        # Condense
+        for tax in taxlist:
+            table_cond.loc[tax] = formatted_ASV_table[formatted_ASV_table[level]==tax][samples].sum(axis=0)
+            
+        # Save
+        tables[level] = table_cond
+        
+    return tables
+
+
+
+def splitTaxLevels(ASV_table):
+    '''
+    Takes a formatted ASV table and splits out the taxonomy values,
+    generating columns containing each taxonomy call for each taxonomic level
+
+    Parameters
+    ----------
+    ASV_table : pandas.DataFrame
+        This is the raw imported ASV table with
+            index:  taxonomy calls in a format that looks like
+                d__Eukaryota;p__Chlorophyta;c__Chlorophyceae;
+                o__Chlamydomonadales;f__Chlamydomonadales;g__Microglena;s__
+            header: a list of sample names
+
+    Returns
+    -------
+    ASV_taxonomy : pandas.DataFrame
+        ASV_table with new columns corresponding to taxonomic levels,
+        with the taxonomic call for each level.
+    max_level : int
+        The maximum taxonomic level found in the dataset.
+
+    '''
+    # Convert the index of ASV table (taxonomy calls) to a series
+    taxonomy_series = ASV_table.index.to_series()
+    # Split out each taxonomic value using ';'
+    taxonomy_split = taxonomy_series.str.split(';', expand=True)
+    # Remove prefixes
+    taxonomy_clean = taxonomy_split.apply(
+        lambda col: col.map(lambda x: x.split('__')[1] if isinstance(x, str)
+                            and '__' in x else '')
+        )
+    # Rename columns L1-L7 (or max level)
+    taxonomy_clean.columns = [
+        f"L{i+1}" for i in range(taxonomy_clean.shape[1])]
+    # Determine the max taxonomic level
+    max_level = taxonomy_clean.shape[1]
+    # Join the columns back to your original DataFrame
+    ASV_taxonomy = ASV_table.copy()  # if needed, to avoid modifying in place
+    ASV_taxonomy[[f"L{i+1}" for i in range(max_level)]] = taxonomy_clean
+    
+    return ASV_taxonomy, max_level
+    
+    
+    
+    
+    
 def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
-    '''This script reads in and formats an imported raw ASV table by adding \
+    '''
+    This script reads in and formats an imported raw ASV table by adding \
         taxonomy data.
 
     Parameters
@@ -417,6 +568,7 @@ def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
 
     '''
     OTU_table = OTU_table.copy()
+    OTU_table['taxonomy'] = OTU_table.index
     # Get sample list
     samples = list(OTU_table.columns)[0:-1]
        
@@ -466,6 +618,7 @@ def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
     OTU_table[samples] = OTU_table[samples].astype(float)
 
     return OTU_table, samples
+
 
 
 def genFilenamesByLevel(filename_prefix, max_level, filename_suffix = '',
@@ -643,15 +796,20 @@ def colorMap2Tax(tax_set, max_level, cmap = RottenIceVars.cmap):
         for taxval in uniques[level-1]:
             # Find all color values in the next level belonging to this
             # taxonomic set
-            rows = [i for i in np.arange(len(taxlist))
-                    if taxlist[i] == taxval]
-            colorlist = tax_set.iloc[rows]['color-L' + str(level+1)]
+            # Find indices (positions) where taxlist == taxval
+            rows_pos = [i for i in range(len(taxlist)) if taxlist[i] == taxval]
+            # Get labels (index values) corresponding to those rows
+            rows_labels = tax_set.index[rows_pos]
+        
+            colorlist = tax_set.loc[rows_labels, 'color-L' + str(level+1)]
+            
             # Determine the middle color
             if len(colorlist) == 1:
-                midclr = colorlist[0]
-            else: midclr = colorlist[int(len(colorlist)/2)]
+                midclr = colorlist.iloc[0]
+            else: midclr = colorlist.iloc[len(colorlist)//2]
+            
             # Assign this color to all with this tax value
-            tax_set.loc[colorlist.index, 'color-L' + str(level)] = midclr
+            tax_set.loc[rows_labels, 'color-L' + str(level)] = midclr
             
     # Return the colormap
     cols_all_clr = ['color-L' + str(i) for i in np.arange(1,max_level+1)]        
@@ -932,7 +1090,8 @@ def buildPlotDicts(data, level, samples, colormap):
     # Create normalized data
     normdata = data.copy()
     for sample in samples:
-        normdata[sample] = normdata[sample].values/np.sum(normdata[sample])
+        normdata[sample] = normdata[sample].values/np.sum(
+            normdata[sample].values)
     
     # Make color list
     colorlist = []
@@ -1001,7 +1160,176 @@ def genLegendOutside(taxlist, colors, key_val_ht = 24, key_top_pad = 40):
     return l
 
 
+#%%
+#---------------------------------
+# PLOTS - PCA
+#---------------------------------
 
+def biplot(data_table, samples, variables, title,
+           color_col, color_map, marker_col, marker_map,
+           n_arrows=None, marker_size = 10):
+    '''
+    Creates a PCA biplot of metadata
+
+    Parameters
+    ----------
+    data_table : pandas.DataFrame
+        Table containing the data to analyze (which must be numeric),
+        with samples as rows, variables as columns, including the columns used
+        to map color and marker types (can be non-numeric).
+    variables : list of str
+        List of the variables (column names) to include in the PCA analysis.
+        Variable values must be numeric.
+    color_col : str
+        Column in data_table that determines the marker colors
+        (used in color_map).
+    color_map : dict of str
+        Dictionary mapping values in color_col to colors.
+    marker_col : str
+        Column in data_table that determines the marker shape
+        (used in marker_map).
+    marker_map : dict of str
+        Dictionary mapping values in marker_col to marker shapes.
+    title : str
+        Title for labeling the plot
+    n_arrows : int, optional
+        The maximum number of variable vector arrows to display.
+        If defined, the plot will display only the N most important variables.
+        The default is None.
+    arrow_scale : float, optional
+        Factor used to scale the variable vector arrows. The default is 1.0.
+        Increasing this makes the arrows longer/larger.
+    marker_size : int, optional
+        Size of the sample markers in the PCA plot. The default is 10.
+
+    Returns
+    -------
+    pca_scores : Array of float with dimension [n samples, m pcoa axes]
+        PCA-transformed sample data (from pca.transform()).
+    var_loadings : Array of float with dimension [n metadata parameters, m pca axes]
+        PCA component loadings, i.e., how much each variable influences each
+        pca axis (from pca.components).T).
+    fig : matplotlib figure
+        The biplot figure handle
+
+    '''
+    ### PCA CALCULATIONS
+    
+    # Build matrix with only the indicated metadata values
+    valid_rows = [s for s in samples if s in data_table.index]
+    invalid_rows = [s for s in samples if s not in data_table.index]
+    valid_cols = [v for v in variables if v in data_table.columns]
+    invalid_cols = [v for v in variables if v not in data_table.columns]
+    for s in invalid_rows:
+        print(f"Warning: Sample '{s}' not found in data table index and will be skipped.")
+    for v in invalid_cols:
+        print(f"Warning: Variable '{v}' not found in data table columns and will be skipped.")
+    df = data_table.loc[valid_rows, valid_cols]
+    
+    # Identify and remove non-numeric columns
+    non_numeric_cols = df.select_dtypes(exclude=['number']).columns
+    for col in non_numeric_cols:
+        print(f"Column '{col}' is non-numeric and will be removed.")
+    df_clean = df.drop(columns=non_numeric_cols)
+            
+    # Delete any samples/rows with missing data
+    rows_with_na = df_clean[df_clean.isna().any(axis=1)]
+    for idx in rows_with_na.index:
+        print(f"Error: '{idx}' contains missing values and will be skipped.")
+    df_clean = df_clean.dropna()
+    clean_index = df_clean.index
+    
+    # Subset and scale the data
+    X = df_clean.values
+    X_scaled = StandardScaler().fit_transform(X)
+    
+    # Perform 2-dimensional PCA analysis
+    pca = PCA(n_components=2)
+    pca_scores = pca.fit_transform(X_scaled)
+    var_loadings = pca.components_.T  # shape (n_features, 2)
+    
+    # Align full metadata table to samples used for PCA
+    data_for_plot = data_table.loc[clean_index]
+    
+    
+    ### MAKE BIPLOT    
+
+    # Set up plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Extract groupings
+    color_vals = data_for_plot[color_col]
+    marker_vals = data_for_plot[marker_col]
+
+    # Plot samples
+    for c_val in color_map:
+        for m_val in marker_map:
+            idx = (color_vals == c_val) & (marker_vals == m_val)
+            if idx.any():
+                ax.scatter(pca_scores[idx, 0], pca_scores[idx, 1],
+                           color=color_map[c_val],
+                           marker=marker_map[m_val], s = marker_size,
+                           label=f"{c_val} / {m_val}",
+                           edgecolor='black', alpha=0.8)
+    
+    # Compute the vector magnitude (importance)
+    vector_lengths = np.linalg.norm(var_loadings, axis=1)
+    
+    # Select the top N variables if n_arrows is capped
+    if n_arrows is not None and n_arrows < len(var_loadings):
+        top_indices = np.argsort(vector_lengths)[-n_arrows:] # N largest
+    else:
+        top_indices = np.arange(var_loadings.shape[0]) # show all variables
+        
+    # Scale the arrows based on the plot size
+    # Determine the range of PCA scores (sample scatter points)
+    x_range = pca_scores[:, 0].max() - pca_scores[:, 0].min()
+    y_range = pca_scores[:, 1].max() - pca_scores[:, 1].min()
+    max_plot_radius = 0.3 * max(x_range, y_range)  # Half the width/height
+    # Determine max length of loading vector
+    arrow_lengths = np.linalg.norm(var_loadings, axis=1)
+    max_arrow_length = arrow_lengths.max()
+    # Compute scale factor to make longest arrow ~half the plot
+    arrow_scale = max_plot_radius / max_arrow_length
+    
+    # Plot arrows for variable loadings    
+    for i in top_indices:
+        ax.arrow(0, 0,
+                 var_loadings[i, 0] * arrow_scale,
+                 var_loadings[i, 1] * arrow_scale,
+                 color='gray', alpha=0.8,
+                 head_width=0.03, head_length=0.05)
+        ax.text(var_loadings[i, 0]  * arrow_scale * 1.15,
+                var_loadings[i, 1] * arrow_scale * 1.15,
+                variables[i], color='gray',
+                ha='center', va='center', fontsize=9)
+
+    # Label axes with explained variance
+    pca_var = np.var(pca_scores, axis=0) / np.sum(np.var(pca_scores, axis=0))
+    ax.set_xlabel(f"PC1 ({pca_var[0]*100:.1f}%)", fontsize=10, color = 'k')
+    ax.set_ylabel(f"PC2 ({pca_var[1]*100:.1f}%)", fontsize=10, color = 'k')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10, frameon=False)
+    ax.set_title(title, fontsize=12)
+    ax.set_facecolor('white')
+    ax.grid(False)
+    
+    # Ensure all axis box lines are visible
+    for side in ['top', 'right', 'bottom', 'left']:
+        ax.spines[side].set_visible(True)
+        ax.spines[side].set_linewidth(1.2)
+        ax.spines[side].set_color('black')
+        
+    ax.tick_params(direction='out', length=6, width=1, colors='k')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return pca_scores, var_loadings, fig
+
+
+
+
+#%%
 #---------------------------------
 # HTML FILES
 #---------------------------------
