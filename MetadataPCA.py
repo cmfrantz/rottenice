@@ -60,14 +60,6 @@ import RottenIceModules
 # VARIABLES
 ####################
 
-# Define the samples to analyze
-samples = [
-    'M-CS-HT','M-CS-HM','M-CS-HB',
-    'JN-CS-HT','JN-CS-HM','JN-CS-HB',
-    'JY10-HT','JY10-HM','JY10-HB',
-    'JY11-HT','JY11-HM','JY11-HB'
-    ]
-
 # Colors for coding the different months / floes
 color_col = 'loc_id'    # Defines the column in the metadata table that contains the information mapped to colors below
 color_map = {      # Colors based on the viridis palette

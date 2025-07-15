@@ -19,7 +19,8 @@ This script:
     - Produces HTML files for each sequence template type with all of the
         heatmaps (at each taxonomic level).
 
-This script was created as part of the Rotten Ice Project
+This script was created as part of the Rotten Ice Project.
+It was substantially overhauled in 2025 to use simpler files.
 
 Arguments:  None
 
@@ -38,7 +39,6 @@ Example in command line:
 Dependencies Install:
     sudo apt-get install python3-pip python3-dev
     pip install tkinter
-    pip install progress
     pip install numpy
     pip install pandas
     pip install matplotlib
@@ -54,7 +54,7 @@ If you get an error indicating that one of these modules is not found,
     change the working directory to the directory containing these files.
 
 
-Copyright (C) 2020  Carie M. Frantz
+Copyright (C) 2025  Carie M. Frantz
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -74,8 +74,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
-from progress.bar import Bar
-
 import pandas as pd
 
 import numpy as np
@@ -96,19 +94,24 @@ import RottenIceVars
 ####################
 
 # Types of sequence data
-genes = RottenIceVars.genes
+genes = ['16S','18S','Eukaryotic Primary Producers (18S)']
+max_level = 7
 templates = RottenIceVars.templates
 
 # Samples to exclude
 otherlist = RottenIceVars.other_samples
 
 # Variables to plot
-varlist = ['day_num', 'horizon_code', 'sample_mat_code',
-           'coord_lat', 'coord_lon', 'temperature', 'pH', 'bulk_density',
-           'salinity_insitu', 'salinity', 'SPM', 'DOC', 'Chl', 'Phaeo',
-           'FoFa', 'PAM', 'SedLoad', 'bact_cell_ct', 'CTC',
-           'bact_active_cell_ct', 'diatom_ct', 'phyto_ct_all',
-           'phyto_ct_other', 'pEPS', 'POC', 'nitrogen', 'CN']
+varlist = ['month_num','horizon_num','replicate','lat','lon','depth_in_ice',
+           'pH','salinity','SPM','DOC','chl','phaeo','FoFa','PAM','SedLoad',
+           'cell_ct','CTC','cells_act','pEPS','POC','nitrogen','CN',
+           'temperature','bulk_ice_density','diatom_ct','phyto_ct_select',
+           'phyto_ct_all','phyto_ct_other','gels_total','gels_sm','gels_md',
+           'gels_lg','gels_xl'
+]
+
+# Define taxonomic levels
+tax_levels = RottenIceVars.tax_levels
 
 # Colormap to use - pick a diverging colormap
 cmap = RottenIceModules.genDivergingCmap()
@@ -121,7 +124,7 @@ p_cutoff = 0.01
 n_groups = 20
 
 # Info about file naming
-file_info = RottenIceVars.file_sets['spearman']
+file_info = RottenIceVars.file_sets['spearman_taxonomy']
 out_filename = file_info['pfx']
 title = file_info['title']
 
@@ -140,20 +143,50 @@ negative numbers indicate a negative correlation;
 larger numbers indicate stronger correlations. 
 The top ''' + str(n_groups) + ''' most abundant taxonomic groups for each 
 level were analyzed (across all samples, with abundance normalized to total 
- amplicon recovery). Analysis done by C. Frantz, June 2020.
+ amplicon recovery). Created using the script 
+<a href="https://github.com/cmfrantz/rottenice">
+SpearmanGrid.py</a>. Analysis done by C. Frantz, June 2025.
 '''
+
 
 ####################
 # FUNCTIONS
 ####################
 
-def buildCorrTable(metadata, abundance_table, samples):
-    '''Build the metadata vs. taxonomic abundance table
-        containing calculated Spearman correlation coefficients'''
+def buildCorrTable(metadata, abundance_table, varlist, samples,
+                   significance = 0.05):
+    '''
+    Calculates Spearman correlation coefficients for metadata vs. relative
+    taxonomic abundance
+
+    Parameters
+    ----------
+    metadata : pd.DataFrame
+        Metadata table, where columns are metadata parameters and index is
+        the sample list.
+    abundance_table : pd.DataFrame
+        Taxonomic abundance table at some taxonomic depth, where columns are
+        samples and rows are the taxa, values are the relative abundance for
+        each taxon.
+    varlist : list of str
+        List of metadata parameters (must be numerical) to correlate.
+    samples : list of str
+        List of samples to analyze.
+    significance : float
+        Cutoff value for assessing significance. Default = 0.05.
+
+    Returns
+    -------
+    corrtable : pd.DataFrame
+        Table of Spearman correlation values, if values meet the significance
+        threshhold.
+
+    '''
     corrtable = pd.DataFrame(data = None, index = abundance_table.index,
                              columns = varlist)
     # Remove replicate number from sample names
-    msamples = [sample[0:-2] for sample in samples]
+    msamples = samples.copy()
+    # msamples = [sample[0:-2] for sample in samples]
     
     # Loop through each taxonomic group
     for group in abundance_table.index:
@@ -168,37 +201,64 @@ def buildCorrTable(metadata, abundance_table, samples):
             
             # If p value <= 0.05, assign the correlation a color on the
             # diverging color scale and add it to the heatmap matrix
-            if p <= 0.05:
+            if p <= significance:
                 corrtable.loc[group, var] = corr
                 
     return corrtable.astype(float)
     
 
-def buildHeatmap(ax, corrtable, dset):
-    '''Build the heatmap of correlation coefficients'''
+def buildHeatmap(ax, cmap, corrtable, title, vmin = -1, vmax = 1):
+    '''
+    Builds heatmap figure from a table of correlation values
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Handle for the subplot Axes object.
+    cmap : matplotlib.colors.ListedColormap
+        Colormap object for mapping colors to values
+    corrtable : pandas.DataFrame
+        DataFrame containing a table of correlation coefficients between the
+        index and columns.
+    title : str
+        Text used to label the heatmap
+    vmin: int or float
+        Value setting the minimum possible value for the correlation coeffs.
+        Default is -1.
+    vmax: int or float
+        Value setting the maximum posible value for the correlation coeffs.
+        Default is 1.
+
+    Returns
+    -------
+    im : matplotlib.axes.Axes.imshow
+        Displays image, returns handle.
+
+    '''
     # Build the figure
-    im = ax.imshow(corrtable, cmap = cmap, vmin = -1, vmax = 1)
+    im = ax.imshow(corrtable, cmap, vmin = -1, vmax = 1)
     
-    # Place x and y ticks and labels
+    # Place x & y ticks and labels
     ax.set_xticks(np.arange(corrtable.shape[1]))
     ax.set_yticks(np.arange(corrtable.shape[0]))
-    ax.set_xticklabels(corrtable.columns, ha = 'right',
-                       rotation = 45, rotation_mode = 'anchor')
+    ax.set_xticklabels(
+        corrtable.columns, ha = 'right', rotation = 45,
+        rotation_mode = 'anchor')
     ax.set_yticklabels(corrtable.index)
     ax.tick_params(labelsize = 9)
     
     # Add grid to plot
-    ax.set_xticks(np.arange(corrtable.shape[1]+1)-0.5, minor = True)
-    ax.set_yticks(np.arange(corrtable.shape[0]+1)-0.5, minor = True)
-    ax.grid(which = 'minor', color = 'k', linestyle = '-', linewidth = 1)
+    ax.set_xticks(np.arange(corrtable.shape[1]+1)-0.5, minor=True)
+    ax.set_yticks(np.arange(corrtable.shape[0]+1)-0.5, minor=True)
+    ax.grid(which = 'minor', color = 'k', linestyle = '-', linewidth=1)
     ax.tick_params(which = 'minor', bottom = False, left = False)
     
-    # Add title to the plot
-    ax.set_title(dset + ' L' + str(level))
+    # Add title to plot
+    ax.set_title(title)
     
     # Create colorbar
     cbar = ax.figure.colorbar(im, ax = ax)
-    cbar.ax.set_ylabel("Spearman Correlation", va = 'bottom')
+    cbar.ax.set_ylabel('Spearman Correlation', va = 'bottom')
     
     return im
         
@@ -206,7 +266,7 @@ def buildHeatmap(ax, corrtable, dset):
 # Annotate heatmap
 def annotateHeatmap(im, data=None, valfmt = "{x:.2f}", **textkw):
     '''Annotate the heatmap with text displaying correlation coefficients'''
-    if not isinstance(data, (list, np.ndarray)):                                # What does t his do?
+    if not isinstance(data, (list, np.ndarray)):
         data = im.get_array()
         
     # Set default alignment to center, but allow it to be 
@@ -265,28 +325,21 @@ if __name__ == '__main__':
     nav_html = nav_html[:-3]
     
     # Build heatmaps
+    spearman_tables = {}
     # Loop through each dataset
     for dset in asv_tables:
         print('*******************************************************\n'
               'Determining Spearman correlations for ' + dset + ' dataset\n'
               '*******************************************************')
+              
         gene = dset.split('-')[0]
-        max_level = genes[gene]['max_level']
         
-        # Format data
-        data, samples = RottenIceModules.formatOTUtableData(
-            asv_tables[dset], max_level = max_level,
-            tax_reassign_list = genes[gene]['tax_reassign_list'])
-        # Get rid of any samples with no data and update the sample list ############
-        data = data.dropna(axis = 1)
-        samples = data.columns
-        non_sample_cols = ['taxonomy'] + RottenIceModules.levelCols(max_level)
-        samples = [sample for sample in samples
-                   if sample not in non_sample_cols]
-        samples = [sample for sample in samples
-                   if not any(other in sample for other in otherlist)]
-        data = data[samples + non_sample_cols]
-        
+        # Format & condense data by level
+        ASV_table, samples = RottenIceModules.formatASVTable(
+            asv_tables[dset], tax_levels, max_level)
+        level_tables = RottenIceModules.condenseASVTable_by_TaxLevel(
+            ASV_table, tax_levels[0:max_level], samples)
+
         # Set up figure grid
         print('Preparing figure grid...')
         fig, axes = plt.subplots(max_level, 1,
@@ -294,28 +347,36 @@ if __name__ == '__main__':
         
         # Perform correlation calculations
         # and build heatmaps for each taxonomic level
-        bar = Bar('Calculating at each taxonomic level...',
-                  max = max_level) # Progress bar
+        # Condense datasets
         # Loop through each taxonomic level
-        for level in np.arange(1,max_level+1,1):
-            # Condense the dataset to the level
-            ds = RottenIceModules.condenseDataset(data, level, samples)
-            # Normalize the dataset
-            ds = ds / ds.sum(axis = 0)
-            # Find the most abundant ASVs
-            ds['sums'] = ds.sum(axis = 1)
-            ds = ds.sort_values(by = ['sums'], ascending = False)
+        for l in np.arange(0,max_level,1):
+            level = tax_levels[l]            
+            print('Taxonomic level ' + str(l+1) + ' (' + level + ')...')
+            ds = level_tables[level].copy()
+            # normalize the dataset
+            ds = ds/ds.sum(axis = 0)
+            # find the most abundant taxa
+            ds['sums'] = ds.sum(axis=1)
+            ds = ds.sort_values(by=['sums'], ascending=False)
             if ds.shape[0] >= n_groups:
-                ds = ds.iloc[0:n_groups-1]
+                ds = ds.iloc[0:n_groups]
+                
             # Calculate Spearman correlation and return significant values
-            corrtable = buildCorrTable(metadata, ds, samples)
-            # Build heatmap
-            ax = axes[level-1]
-            im = buildHeatmap(ax, corrtable, dset)
-            texts = annotateHeatmap(im, fontsize = 6)
-            bar.next()
-        bar.finish()
+            print('  Calculating Spearman correlation coefficients for taxa')
+            corrtable = buildCorrTable(
+                metadata, ds, varlist, samples, significance = p_cutoff)
+            
+            # Save correlation table
+            spearman_tables[dset+'_L'+str(l+1)] = corrtable
         
+            # Build heatmap table to display results of Spearman correlations
+            ax = axes[l]
+            im = buildHeatmap(
+                ax, cmap, corrtable,
+                ('Spearman correlation of ' + dset +
+                 ' data at taxonomic level ' + str(l+1) + ' ' + level))
+            texts = annotateHeatmap(im, fontsize = 6)
+            
         # Save plots
         print('Saving ' + dset + ' figure files...')
         fig.tight_layout()
