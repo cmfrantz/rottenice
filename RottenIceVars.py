@@ -60,7 +60,10 @@ fraction_sets_CS = {
     }
 
 # Indicators of 'outgroup' samples to exclude from some analyses
-other_samples = ['Blank', 'EL']
+other_samples = ['Blank', 'Negative', 'Unknown', 'EL']
+
+# Taxonomic level definitions in order
+tax_levels = ['domain','phylum','class','order','family','genus','species']
 
 # Genes sequenced in the project
 genes = {
@@ -137,14 +140,28 @@ plotMarkerBorderByMonth = {
 # Data file format info
 data_table_fmts = {
     'metadata'  : {
-        'head_row'  : 2,
+        'head_row'  : 0,
         'index_col' : 0,
-        'filetype'  : 'csv'
+        'filetype'  : 'tsv'
         },
-    'OTU-table' : {
+    'ASV-table' : {
+        'head_row'  : 0,
+        'index_col' : 0,
+        'filetype'  : 'tsv'
+        },
+    'OTU-table' : {     # This is the format exported from QIIME2's barplots
         'head_row'  : 0,
         'index_col' : 0,
         'filetype'  : 'csv'
+        },
+    'ASV-table-fromBIOM' : {
+        # This is the format using the series of commands to add taxonomy to
+        # QIIME feature-table qza files using BIOM intermediates.
+        # Unlike the barplot exports, it retains the feature IDs in addition
+        # to the taxonomy.
+        'head_row'  : 1,
+        'index_col' : 0,
+        'filetype'  : 'tsv'
         },
     'alpha-div' : {
         'head_row'  : 0,
@@ -178,7 +195,7 @@ metadataFullTitle = {
                        + ' m' + r'$^{3}$' + ')'),
     'Chl_Phaeo'     : '[Chl]/[Chl+Phaeo]',
     'FoFa'          : r'$F_o/F_a$',
-    'PAM'           : 'PAM read',
+    'PAM'           : 'PAM read' + r'$F_v/F_m$',
     'SedLoad'       : 'Visible sediment load (1 low, 2 med, 3 high)',
     'bact_cell_ct'  : ('Bacteria (cells ' + r'$\cdot$' + ' ml'
                        + r'$^{-1}$' + ')'),
