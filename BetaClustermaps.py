@@ -64,6 +64,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 import os
 import pandas as pd
 import seaborn as sns
+from scipy.spatial.distance import squareform
+from scipy.cluster.hierarchy import linkage
 
 import matplotlib
 # Define the font type to make exported plots editable in Adobe Illustrator
@@ -78,6 +80,11 @@ import RottenIceVars
 # VARIABLES
 ####################
 
+# Outputdirectory
+# Define this if there is a directory where files should go.
+# If None, the default is the same folder where the distance matrices came from
+outdir = None
+
 # Plot / HTML file title info
 title = RottenIceVars.file_sets['beta_cluster']['title']
 subtitle_text = ('Heatmaps generated from weighted UniFrac distance matrices '
@@ -86,9 +93,9 @@ subtitle_text = ('Heatmaps generated from weighted UniFrac distance matrices '
                  + 'nearest-point clustering on correlation distances using '
                  + 'the <a href="https://seaborn.pydata.org/generated/'
                  + 'seaborn.clustermap.html">seaborn.clustermap</a> package '
-                 + '(v. 0.10.1) for Python. Data processed using the script '
+                 + '(v. 0.12.2) for Python. Data processed using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
-                 + 'BetaClustermaps.py</a>. C. Frantz, May 2020</p>')
+                 + 'BetaClustermaps.py</a>. C. Frantz, July 2025</p>')
 file_pfx = RottenIceVars.file_sets['beta_cluster']['pfx']
 alt_text_pfx = 'Sample clustermap: '
 
@@ -240,10 +247,20 @@ def buildPlot(data, color_category, figsize, filename):
         color_set = pd.Series(fractions, index = data.columns).map(
             fraction_cmap)
     
+    # Convert distance matrix to condensed form that seaborn expects
+    condensed = squareform(data.values)
+    # Generate linkage for rows and columns
+    row_linkage = linkage(condensed, method = 'single')
+    col_linkage = linkage(condensed.T, method = 'single')
+    
     # Heatmap
-    p = sns.clustermap(data, metric="correlation", method="single",
-                       cmap=cmap, figsize=(figsize,figsize),
-                       col_colors = color_set)
+    p = sns.clustermap(
+        data, figsize = (figsize,figsize),
+        row_linkage = row_linkage,
+        col_linkage = col_linkage,
+        cmap = cmap, col_colors = color_set,
+        metric=None # Don't need to re-calculate distances since it's a distance matrix
+        )
     
     # Save heatmap
     p.savefig(filename + '.svg', transparent = True)
@@ -251,7 +268,7 @@ def buildPlot(data, color_category, figsize, filename):
     return p
 
 
-def genHTMLPage(headstr):   
+def genHTMLPage(headstr, filepath):   
     '''Builds HTML pages for all of the images'''    
     for gene in genes:
         for s in sets:
@@ -304,7 +321,7 @@ def genHTMLPage(headstr):
                     htmltxt = htmltxt + '</tr>'
                 htmltxt = htmltxt + '</table>'
             
-            hfile = open(file_pfx + '_' + gene + '_' + s + '.html', 'w')
+            hfile = open(filepath + '_' + gene + '_' + s + '.html', 'w')
             hfile.write(htmltxt)
             hfile.close()
     
@@ -325,11 +342,15 @@ nav_html = nav_html[:-6]
 directory = os.getcwd()
 for gene in genes:
     filename, directory, distance_matrix = RottenIceModules.fileGet(
-        'Select ' + gene + ' distance matrix',  file_type = 'csv',
+        'Select ' + gene + ' distance matrix',  file_type = 'tsv',
         header_row = 0, index_col = 0, directory = directory)
     genes[gene]['distMatrix'] = parseSamples(distance_matrix)
 
-filepath_pfx = directory + '\\' + file_pfx
+# Determine the filepath
+if outdir != None: # If directory is specified in the initial variables
+    filepath_pfx = outdir + '\\' + file_pfx
+else: # Otherwise use the directory the distance matrix came from
+    filepath_pfx = directory + '\\' + file_pfx
 
 # Run the analysis and build the plots
 for gene in genes:
@@ -366,8 +387,11 @@ for gene in genes:
         for ftype in fractions:
             print(ftype)
             f = fractions[ftype]['subset']
-            fdf = datasets[ds]['all'].loc[:, pd.IndexSlice[:,f]]
-            datasets[ds][ftype] = fdf.loc[pd.IndexSlice[:,f],:]
+            # Make sure the fractions are represented
+            mask_rows = datasets[ds]['all'].index.get_level_values('Fraction').isin(f)
+            mask_cols = datasets[ds]['all'].columns.get_level_values('Fraction').isin(f)
+            # Split out the dataset to plot
+            datasets[ds][ftype] = datasets[ds]['all'].loc[mask_rows, mask_cols]
             buildPlot(datasets[ds][ftype], 'month', 10,
                       filename + '_' + ftype + '_' + ds)
         
@@ -375,7 +399,7 @@ for gene in genes:
 # Generate HTML pages
 headstr = RottenIceModules.genHTMLhead(
     title, page_nav_html = nav_html, subtitle_text = subtitle_text)
-genHTMLPage(headstr)
+genHTMLPage(headstr, filepath_pfx)
         
 
     
