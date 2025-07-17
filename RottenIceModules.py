@@ -197,6 +197,22 @@ def metadataFromSamplename(samplename):
 	return month, fraction
 
 
+def samplenameToMonthFractionReplicateGeneTemplate(samplename):
+    '''
+    Takes a full sequencing sample name like M-CS-HT-1.16S-DNA
+    and returns the month (M), fraction (HT), replicate (1), gene (16S) and 
+    template (DNA)
+    '''
+    split1 = samplename.split('.')
+    sample = split1[0].split('-')
+    month = sample[0]
+    fraction = sample[-2]
+    replicate = sample[-1]
+    gene_template = split1[1]
+    split2 = gene_template.split('-')
+    gene = split2[0]
+    template = split2[1]
+    return month, fraction, replicate, gene, template
 
 #---------------------------------
 # DATA PREP: GENERAL
