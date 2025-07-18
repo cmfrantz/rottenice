@@ -82,7 +82,7 @@ import RottenIceVars
 
 # Outputdirectory
 # Define this if there is a directory where files should go.
-# If None, the default is the same folder where the distance matrices came from
+# If None, the default is the working directory
 outdir = None
 
 # Plot / HTML file title info
@@ -111,13 +111,9 @@ fractions = {
         'title'     : 'Whole-horizon melts',
         'subset'    : ['HT','HM','HB']
         },
-    'B' : {
-        'title'     : 'Brines',
-        'subset'    : ['BT', 'BM', 'BB', 'B']
-        },
-    'O': {
-        'title'     : 'Other fluids',
-        'subset'    : ['P1','P2','PW','SW','Drain']
+    'F' : {
+        'title'     : 'Fluids',
+        'subset'    : ['BT', 'BM', 'BB', 'B', 'P1', 'P2', 'PW', 'SW', 'Drain']
         }
     }
 
@@ -125,7 +121,8 @@ fractions = {
 cmap = RottenIceVars.cmap
 genes = {
     '16S'   : {},
-    '18S'   : {}
+    '18S'   : {},
+    '18S PrimProd' : {}
     }
 templates = ['DNA', 'cDNA']
 sets = {
@@ -189,13 +186,9 @@ fractions = {
         'title'     : 'Whole-horizon melts',
         'subset'    : ['HT','HM','HB']
         },
-    'B' : {
-        'title'     : 'Brines',
-        'subset'    : ['BT', 'BM', 'BB', 'B']
-        },
-    'O': {
-        'title'     : 'Other fluids',
-        'subset'    : ['P1','P2','PW','SW','Drain']
+    'F' : {
+        'title'     : 'Fluids',
+        'subset'    : ['BT', 'BM', 'BB', 'B','P1','P2','PW','SW','Drain']
         }
     }
     
@@ -349,8 +342,8 @@ for gene in genes:
 # Determine the filepath
 if outdir != None: # If directory is specified in the initial variables
     filepath_pfx = outdir + '\\' + file_pfx
-else: # Otherwise use the directory the distance matrix came from
-    filepath_pfx = directory + '\\' + file_pfx
+else: # Otherwise use the current working directory
+    filepath_pfx = os.getcwd() + '\\' + file_pfx
 
 # Run the analysis and build the plots
 for gene in genes:
