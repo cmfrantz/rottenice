@@ -227,10 +227,16 @@ plotMarkerBorderByMonth = {
 
 # Data file format info
 data_table_fmts = {
-    'metadata'  : {
+    'metadata-qiime'  : {   # This is the metadata file used in QIIME2
+                            # For each sample - gene - template sequenced
         'head_row'  : 0,
         'index_col' : 0,
         'filetype'  : 'tsv'
+        },
+    'metadata-sample' : {   # This is the master sample measurement table csv
+        'head_row'  : 2,
+        'index_col' : 0,
+        'filetype'  : 'csv'
         },
     'ASV-table' : {
         'head_row'  : 0,

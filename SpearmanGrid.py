@@ -25,13 +25,17 @@ It was substantially overhauled in 2025 to use simpler files.
 Arguments:  None
 
 Requirements:   
-    Metadata table (csv)
-        where rows = samples, columns = metadata characteristics
-        header row and index column are specified in the variables below
+    Metadata table (tsv)
+        where rows = sample IDs, columns = metadata characteristics
+        This is the same metadata table used in QIIME2 which contains
+        metadata for every sample - gene - template combination
         
     ASV tables (csv) for every sequence dataset analyzed
-        where rows = ASVs, columns = samples
-        header row and index column are specified in the variables below
+        where rows = taxonomy calls, columns = samples,
+        values = taxonomy counts for each sample
+        These files are produced by exporting Level 7 taxonomic data from
+        QIIME2 barplots in Qiime2View, transposing them,
+        and seperating them by template (cDNA vs. DNA)
 
 Example in command line:
     python SpearmanGrid.py
@@ -285,7 +289,10 @@ def annotateHeatmap(im, data=None, valfmt = "{x:.2f}", **textkw):
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             kw.update(color='w')
-            text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
+            val = data[i, j]
+            if np.ma.is_masked(val) or np.isnan(val):
+                continue
+            text = im.axes.text(j, i, valfmt(val, None), **kw)
             texts.append(text)
 
     return texts
@@ -296,100 +303,89 @@ def annotateHeatmap(im, data=None, valfmt = "{x:.2f}", **textkw):
 ####################
 
 if __name__ == '__main__':
-    
-    # Import Metadata table
-    filename, directory, metadata, = RottenIceModules.fileGet(
-        'Select metadata table', tabletype = 'metadata')
-    metadata = metadata.dropna(how = 'all')
-    metadata = metadata.replace('na', np.nan)
-    # Build matrix of metadata values
+
+    # Import metadata
+    filename, directory, metadata = RottenIceModules.fileGet(
+        'Select metadata table', tabletype='metadata-qiime')
+    metadata = metadata.dropna(how='all').replace('na', np.nan)
     metadata = metadata[varlist]
-    
-    # Import ASV tables
-    asv_tables = {}
+
+    # Import taxonomy tables
+    tax_tables = {}
     for gene in genes:
         for template in templates:
             dset = gene + '-' + template
             filename, directory, data = RottenIceModules.fileGet(
-                'Select ' + dset + ' ASV table', tabletype = 'OTU-table',
-                directory = directory)
-            asv_tables[dset] = data
-            
-    # Set up file navigation html
-    filenames = [(dset, out_filename + '_' + dset) 
-                 for dset in asv_tables]
+                'Select ' + dset + ' ASV table', tabletype='OTU-table', directory=directory)
+            tax_tables[dset] = data
+
+    # Set up file navigation HTML
+    filenames = [(dset, out_filename + '_' + dset) for dset in tax_tables]
     nav_html = RottenIceVars.nav_html_start
     for dset in filenames:
-        nav_html = (nav_html + ' <a href = "' + dset[1] + '.html">'
-                    + dset[0] + '</a>  /')
+        nav_html += f' <a href="{dset[1]}.html">{dset[0]}</a> /'
     nav_html = nav_html[:-3]
-    
-    # Build heatmaps
+
+    # Correlation heatmaps per dataset
     spearman_tables = {}
-    # Loop through each dataset
-    for dset in asv_tables:
-        print('*******************************************************\n'
-              'Determining Spearman correlations for ' + dset + ' dataset\n'
-              '*******************************************************')
-              
+
+    for dset in tax_tables:
+        print(f'\n******** Processing {dset} ********')
         gene = dset.split('-')[0]
-        
-        # Format & condense data by level
+        img_filenames = []
+
+        # Format and condense
         ASV_table, samples = RottenIceModules.formatASVTable(
-            asv_tables[dset], tax_levels, max_level)
+            tax_tables[dset], tax_levels, max_level)
         level_tables = RottenIceModules.condenseASVTable_by_TaxLevel(
             ASV_table, tax_levels[0:max_level], samples)
 
-        # Set up figure grid
-        print('Preparing figure grid...')
-        fig, axes = plt.subplots(max_level, 1,
-                                 figsize = (20, max_level * n_groups * 0.5))
-        
-        # Perform correlation calculations
-        # and build heatmaps for each taxonomic level
-        # Condense datasets
         # Loop through each taxonomic level
-        for l in np.arange(0,max_level,1):
-            level = tax_levels[l]            
-            print('Taxonomic level ' + str(l+1) + ' (' + level + ')...')
+        for l in range(max_level):
+            level = tax_levels[l]
+            print(f'Taxonomic level {l+1} ({level})...')
             ds = level_tables[level].copy()
-            # normalize the dataset
-            ds = ds/ds.sum(axis = 0)
-            # find the most abundant taxa
-            ds['sums'] = ds.sum(axis=1)
-            ds = ds.sort_values(by=['sums'], ascending=False)
-            if ds.shape[0] >= n_groups:
-                ds = ds.iloc[0:n_groups]
-                
-            # Calculate Spearman correlation and return significant values
-            print('  Calculating Spearman correlation coefficients for taxa')
-            corrtable = buildCorrTable(
-                metadata, ds, varlist, samples, significance = p_cutoff)
-            
-            # Save correlation table
-            spearman_tables[dset+'_L'+str(l+1)] = corrtable
-        
-            # Build heatmap table to display results of Spearman correlations
-            ax = axes[l]
-            im = buildHeatmap(
-                ax, cmap, corrtable,
-                ('Spearman correlation of ' + dset +
-                 ' data at taxonomic level ' + str(l+1) + ' ' + level))
-            texts = annotateHeatmap(im, fontsize = 6)
-            
-        # Save plots
-        print('Saving ' + dset + ' figure files...')
-        fig.tight_layout()
-        filename = (out_filename + '_' + dset)
-        img_filename = filename + '.svg'
-        fig.savefig(directory + '\\' + img_filename,
-                    transparent = True)
 
-        # Generate HTML
+            # Normalize and select top groups
+            ds = ds / ds.sum(axis=0)
+            ds['sums'] = ds.sum(axis=1)
+            ds = ds.sort_values(by='sums', ascending=False)
+            ds = ds.iloc[:n_groups] if ds.shape[0] >= n_groups else ds
+
+            # Spearman correlation
+            print('  Calculating Spearman correlation coefficients...')
+            corrtable = buildCorrTable(metadata, ds, varlist, samples, significance=p_cutoff)
+            spearman_tables[f'{dset}_L{l+1}'] = corrtable
+
+            # Build heatmap
+            fig, ax = plt.subplots(figsize=(20, n_groups * 0.5))
+            im = buildHeatmap(ax, cmap, corrtable,
+                              f'Spearman correlation of {dset} at taxonomic level {l+1} {level}')
+            annotateHeatmap(im, fontsize=6)
+            fig.tight_layout()
+
+            # Save figure
+            img_filename = f"{out_filename}_{dset}_L{l+1}.svg"
+            full_img_path = f"{directory}\\{img_filename}"
+            fig.savefig(full_img_path, transparent=True)
+            img_filenames.append(img_filename)
+            plt.close(fig)
+
+        # Generate HTML per dataset
+        html_path = f"{directory}\\{out_filename}_{dset}.html"
+        html_title = file_info['title']
+        html_body = subtitle_text
+
+        for img in img_filenames:
+            html_body += f'<br><img src="{img}" width="1000" alt="Heatmap: {img}"><br>'
+
         RottenIceModules.genHTMLfile(
-            directory + '\\' + filename + '.html',
-            file_info['title'], subtitle_text,
-            img_filename,
-            page_nav_html = nav_html,
-            alt_text = ('Heatmaps showing Spearman correlation coefficients '
-                        + 'for metadata and abundant taxa'))
+            html_path,
+            html_title,
+            subtitle_text,
+            image_filepaths=img_filenames,
+            alt_text=["Heatmap: " + img for img in img_filenames],
+            page_nav_html=nav_html
+        )
+
+        print(f'Saved HTML and images for {dset} to {directory}')

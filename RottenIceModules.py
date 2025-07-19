@@ -251,8 +251,7 @@ def fileGet(title, tabletype = 'Generic', directory = os.getcwd(),
     '''
     
     # If type of file is specified, use the proper format
-    if tabletype in [
-            'metadata', 'OTU-table', 'ASV-table-fromBIOM', 'alpha-div']:
+    if tabletype in list(RottenIceVars.data_table_fmts):
         table_fmt = RottenIceVars.data_table_fmts[tabletype]
         header_row = table_fmt['head_row']
         index_col = table_fmt['index_col']

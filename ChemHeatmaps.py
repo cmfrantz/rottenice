@@ -17,9 +17,12 @@ This script was created as part of the Rotten Ice Project
 Arguments:  None
 
 Requirements:      
-    Metadata table (csv)
-        where rows = samples, columns = metadata characteristics
-        header row and index column are specified in the variables below
+    Sample Metadata (measurements) table (csv)
+        Where rows = samples, columns = metadata characteristics
+        Header row and index column are specified in the variables below
+        This is NOT the same metadata table used in QIIME2, which provides
+        metadata for each sample-gene-template sequenced. It is the master
+        metadata table of environmental measurements for each sample.
 
 Example in command line:
     python ChemHeatmaps.py
@@ -116,7 +119,9 @@ cmap = RottenIceVars.cmap # Colormap to use; see:
 
 # Output file info
 file_info = RottenIceVars.file_sets['chem_heatmaps']
-subtitle_text = ('Created from compiled project metadata using the script '
+subtitle_text = ('Plots display relative values for different metadata '
+                 + 'parameters, with warm colors indicating greater values.'
+                 + 'Created from compiled project metadata using the script '
                  + '<a href="https://github.com/cmfrantz/rottenice">'
                  + 'ChemHeatmaps.py</a>. Analysis done by C. Frantz, '
                  + 'June 2025.')
@@ -129,7 +134,8 @@ subtitle_text = ('Created from compiled project metadata using the script '
 def readMetadata():
     '''This function reads the sample metadata in from csv file'''
     filename, directory, metadata = RottenIceModules.fileGet(
-        'Select metadata file', tabletype = 'metadata')
+        'Select sample metadata (environmental measurements) file',
+        tabletype = 'metadata-sample')
     # replace invalid values
     metadata = metadata.replace('na', np.nan)
     return metadata, filename, directory
@@ -175,8 +181,8 @@ def buildSubplot(ax, var, matrix_val, matrix_std, cmap):
         # Loop through rows (sample fractions)
         for j in range(len(sample_types)):
             # Retrieve values
-            val = matrix_val.iloc[j][i]
-            std = matrix_std.iloc[j][i]
+            val = matrix_val.iloc[j,i]
+            std = matrix_std.iloc[j,i]
             # Add the annotation text
             if      pd.isnull(val):    valtext = 'nan'
             elif    pd.isnull(std):    valtext = format(val,'g')
