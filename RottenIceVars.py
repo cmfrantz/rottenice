@@ -32,8 +32,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
 
-# Datasets
-templates = ['DNA', 'cDNA']
+#################
+# SAMPLE METADATA
+
 months = {
     'May'       : 'M',
     'June'      : 'JN',
@@ -61,6 +62,12 @@ fraction_sets_CS = {
 
 # Indicators of 'outgroup' samples to exclude from some analyses
 other_samples = ['Blank', 'Negative', 'Unknown', 'EL']
+
+
+#################
+# BIO ANALYSIS VARIABLES
+
+templates = ['DNA', 'cDNA']
 
 # Taxonomic level definitions in order
 tax_levels = ['domain','phylum','class','order','family','genus','species']
@@ -103,25 +110,106 @@ alpha_diversity_metrics = {
     }
     
 
-# Colors
+#################
+# COLORS & MARKERS
 cmap = 'viridis'    # Change this to change the default colormap
 cmaptext = ''''Choose a colormap, e.g.,
 viridis, plasma, prism, nipy_spectral, jet, gist_earth, etc.
 See https://matplotlib.org/tutorials/colors/colormaps.html for a full list. 
 > '''
 
-# Plot formatters
-plotColorsByMonth = {      # Colors based on the viridis palette
-	'M' :      '#441a54',  # Purple
-	'JN':      '#3c538c',  # Blue
-	'JY10':    '#abd03a',  # Light green
-	'JY11':    '#fce61f'   # Yellow
+# Categorical colors to identify the months
+# Based on the viridis color palette
+plotColorsByMonth = {      
+	'M'    :      '#441a54',  # Purple
+	'JN'   :      '#3c538c',  # Blue
+	'JY10' :    '#abd03a',  # Light green
+	'JY11' :    '#fce61f'   # Yellow
+    }
+
+# Categorical color palette to identify the fractions
+'''
+# Based on the 'iceberg1' (cool) palette:
+# https://www.color-hex.com/color-palette/91134
+plotColorsByFraction = {
+    # Ice-only melts in tints of #4F518B
+    'IT'    : [149,150,185],
+    'IM'    : [114,115,162],
+    'IB'    : [79,81,139],
+    # Whole-core melts in tints of #51729c
+    'HT'    : [150,170,195],
+    'HM'    : [115,142,175],
+    'HB'    : [81,114,156],
+    # Brines in tints of #4b8ba7
+    'BT'    : [147,185,202],
+    'BM'    : [110,162,184],
+    'BB'    : [75,139,167],
+    'B'     : [56,104,125],
+    # Sackhole percolates and drains in tints of #7fb8b1
+    'P1'    : [178,212,208],
+    'P2'    : [152,198,192],
+    'Drain' : [127,184,177],
+    # Other fluids
+    'PW'    : [207,237,212],
+    'SW'    : [176,225,184],
+    'Blank' : [255,255,255]
+    }
+
+for f in fraction_cmap:
+    fraction_cmap[f] = [c/256 for c in fraction_cmap[f]]
+'''
+# Based on the 'Seasons of the Dead - Faded Spectrum' (muted rainbow) palette:
+# https://www.color-hex.com/color-palette/14353
+plotColorsByFraction = {
+    # Ice-only melts in tints of #5aa095
+    'IT'    : '#7ab3aa',
+    'IM'    : '#5aa095', # blue
+    'IB'    : '#488077',
+    # Whole-core melts in tints of #ddd481
+    'HT'    : '#e3dc9a',
+    'HM'    : '#ddd481', # yellow
+    'HB'    : '#b0a967',
+    # Brines in tints of #b25959
+    'BT'    : '#c17a7a',
+    'BM'    : '#b25959', # red
+    'BB'    : '#8e4747',
+    'B'     : '#6a3535',
+    # Sackhole percolates and drains in tints of #dd9d72
+    'P1'    : '#e3b08e',
+    'P2'    : '#dd9d72', # orange
+    'Drain' : '#b07d5b',
+    # Other fluids in tints of #83ca82
+    'PW'    : '#b4dfb4', # light green
+    'SW'    : '#5b8d5b', # dark green
+    'BW'    : '#83ca82', # green
+    'Blank' : '#ffffff'
+    }
+
+# Base the material categorical colormap on the fraction colormap used
+plotColorsByMaterial = {
+    'I'     : plotColorsByFraction['IM'],
+    'H'     : plotColorsByFraction['HM'],
+    'B'     : plotColorsByFraction['BM'],
+    'P'     : plotColorsByFraction['P1'],
+    'D'     : plotColorsByFraction['Drain'],
+    'PW'    : plotColorsByFraction['PW'],
+    'SW'    : plotColorsByFraction['SW'],
+    'BW'    : plotColorsByFraction['BW'],
+    'Blank' : plotColorsByFraction['Blank']
+    }
+
+plotMarkersByHorizon = {
+    'T' : '^', # Top = triangle up
+    'M' : 's', # Mid = square
+    'B' : 'v', # Bottom = triangle down
+    'A' : 'h', # Whole-core = hexagon
+    'W' : 'o'  # Waters = circle
     }
 
 plotMarkersByFraction = {
-	'HT' : '^',
-	'HM' : 'o',
-	'HB' : 'v'
+	'HT' : plotMarkersByHorizon['T'],
+	'HM' : plotMarkersByHorizon['M'],
+	'HB' : plotMarkersByHorizon['B']
     }
 
 plotMarkerLineProperties = {
@@ -260,12 +348,6 @@ file_sets = {
                        + 'Spearman correlation analysis'),
         'pfx'       : 'spearman',
         'land_page' : 'spearman/spearman_16S-DNA.html'
-        },
-    'spearman_diversity'    : {
-        'title'     : ('Metadata vs. diversity '
-                       + 'Spearman correlation analysis'),
-        'pfx'       : 'spearman_div',
-        'land_page' : 'spearman/spearman_div.html'
         }
     }
 

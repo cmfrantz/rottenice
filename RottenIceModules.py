@@ -65,7 +65,6 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
-from matplotlib.table import table
 
 from bokeh.io import export_svgs
 from bokeh.models import Legend, LegendItem, Div
@@ -361,25 +360,25 @@ def condenseDataset(data, level, samples):
 
 
 def findAbundantTaxa(datasets, sample_lists, fcutoff = 0.1, max_taxa = 100):
-    '''This script identifies the limited set of most abundant taxa to \
-        include in downstream analysis (e.g., bar plots) from ASV tables of \
-            sequence results of the same gene with the same samples \
+    '''This script identifies the limited set of most abundant taxa to 
+        include in downstream analysis (e.g., bar plots) from ASV tables of 
+            sequence results of the same gene with the same samples 
                 (e.g., 16S DNA & 16S cDNA for the same samples).
 
     Parameters
     ----------
     datasets : list of pandas.DataFrame
         List containing ASV table DataFrames with shared taxonomic values.
-        DataFrames must include sample name headers as well as 'taxonomy' \
+        DataFrames must include sample name headers as well as 'taxonomy' 
             header.
             
     sample_lists : list of index
-        List containing lists of sample names / indices (as str or index) \
+        List containing lists of sample names / indices (as str or index) 
             to be included in the analysis of each passed dataset.
         All sample names should also be headers in all included DataFrames.
             
     fcutoff : float (optional)
-        If any taxa is greater than this value in abundance in any sample, \
+        If any taxon is greater than this value in abundance in any sample, 
             it will be included. Default is 0.1 (10%).
             
     max_taxa : int (optional)
@@ -388,7 +387,7 @@ def findAbundantTaxa(datasets, sample_lists, fcutoff = 0.1, max_taxa = 100):
     Returns
     -------
     abundantTaxa : list of str
-        Alphabetically-sorted list of the most abundant taxa in the selected \
+        Alphabetically-sorted list of the most abundant taxa in the selected 
             samples.
     '''
     abundantTaxa = []
@@ -555,9 +554,7 @@ def splitTaxLevels(ASV_table):
     return ASV_taxonomy, max_level
     
     
-    
-    
-    
+
 def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
     '''
     This script reads in and formats an imported raw ASV table by adding \
@@ -841,7 +838,6 @@ def genDivergingCmap():
     cmap = cm.get_cmap(RottenIceVars.cmap)
     start = cmap(0)
     end = cmap(0.5)
-    #center = viridis((end-start)/2+start)
     center = (1,1,1)
     
     low_vals = []
@@ -1377,134 +1373,7 @@ def biplot(data_table, samples, variables, title,
     else:
         label_table = False
     
-    
-    
-    '''
-    # This version of the figure code added a table key of arrow values
-    # to the plot, but it is not working properly (the table overlaps the plot)
-
-    
-
-    # --- Fixed layout variables ---
-    pca_inches = plot_size          # square PCA plot width and height (inches)
-    legend_pad_inches = legend_pad  # extra width for the legend area
-    table_height_inches = 0         # vertical space reserved for the arrow label table
-
-    # Estimate table height only if arrow labels are requested
-    if number_arrows:
-        rows_per_unit = 10
-        table_height_inches = math.ceil(n_arrows / rows_per_unit) * 1.0 if n_arrows else 1.0
-
-    # Define full figure size
-    fig_width = pca_inches + legend_pad_inches
-    fig_height = pca_inches + table_height_inches
-    fig = plt.figure(figsize=(fig_width, fig_height))
-
-    # Compute Axes placement in figure fractions
-    plot_left = 0.1
-    plot_bottom = table_height_inches / fig_height
-    plot_width_frac = pca_inches / fig_width
-    plot_height_frac = pca_inches / fig_height
-
-    # --- Create square PCA Axes ---
-    ax = fig.add_axes([plot_left, plot_bottom, plot_width_frac, plot_height_frac])
-    ax.set_aspect('equal')
-
-    ### PLOT PCA POINTS
-
-    color_vals = data_for_plot[color_col]
-    marker_vals = data_for_plot[marker_col]
-
-    for c_val in color_map:
-        for m_val in marker_map:
-            idx = (color_vals == c_val) & (marker_vals == m_val)
-            if idx.any():
-                ax.scatter(pca_scores[idx, 0], pca_scores[idx, 1],
-                           color=color_map[c_val],
-                           marker=marker_map[m_val], s=marker_size,
-                           label=f"{c_val} / {m_val}",
-                           edgecolor='black', alpha=0.8)
-
-    # Compute vector magnitudes and select top variables
-    vector_lengths = np.linalg.norm(var_loadings, axis=1)
-    if n_arrows is not None and n_arrows < len(var_loadings):
-        top_indices = np.argsort(vector_lengths)[-n_arrows:]
-    else:
-        top_indices = np.arange(var_loadings.shape[0])
-
-    # Scale arrows relative to sample spread
-    x_range = pca_scores[:, 0].ptp()
-    y_range = pca_scores[:, 1].ptp()
-    max_plot_radius = 0.3 * max(x_range, y_range)
-    max_arrow_length = vector_lengths.max()
-    arrow_scale = max_plot_radius / max_arrow_length
-
-    arrow_labels = {}
-    for count, i in enumerate(top_indices, start=1):
-        arrow_label = str(count) if number_arrows else variables[i]
-        if number_arrows:
-            arrow_labels[count] = variables[i]
-        ax.arrow(0, 0,
-                 var_loadings[i, 0] * arrow_scale,
-                 var_loadings[i, 1] * arrow_scale,
-                 color='gray', alpha=0.8,
-                 head_width=0.03, head_length=0.05)
-        ax.text(var_loadings[i, 0] * arrow_scale * 1.15,
-                var_loadings[i, 1] * arrow_scale * 1.15,
-                arrow_label, color='gray',
-                ha='center', va='center', fontsize=9)
-
-    # Axis labels, title, and legend
-    pca_var = np.var(pca_scores, axis=0) / np.sum(np.var(pca_scores, axis=0))
-    ax.set_xlabel(f"PC1 ({pca_var[0]*100:.1f}%)", fontsize=10)
-    ax.set_ylabel(f"PC2 ({pca_var[1]*100:.1f}%)", fontsize=10)
-    ax.set_title(title, fontsize=12)
-
-    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left',
-              fontsize=10, frameon=False)
-
-    ax.set_facecolor('white')
-    ax.grid(False)
-    for side in ['top', 'right', 'bottom', 'left']:
-        ax.spines[side].set_visible(True)
-        ax.spines[side].set_linewidth(1.2)
-        ax.spines[side].set_color('black')
-    ax.tick_params(direction='out', length=6, width=1, colors='k')
-
-    ### VARIABLE LABEL TABLE (IF NEEDED)
-
-    if number_arrows:
-        label_table = pd.DataFrame.from_dict(
-            arrow_labels, orient='index', columns=['Variable'])
-        label_table.index.name = 'N'
-        label_table = label_table.reset_index()
-
-        cell_text = label_table.values.tolist()
-        col_labels = ['Arrow', 'Variable']
-        col_widths = [0.08, 0.92]
-
-        # Add table in reserved space at bottom
-        table_ax = fig.add_axes([0.05, 0.02, 0.9, table_height_inches / fig_height * 0.8])
-        table_ax.axis('off')
-
-        table_obj = table_ax.table(
-            cellText=cell_text,
-            colLabels=col_labels,
-            cellLoc='left',
-            colWidths=col_widths,
-            loc='center'
-        )
-
-        table_obj.auto_set_font_size(False)
-        table_obj.set_fontsize(8)
-
-        for row in range(len(cell_text) + 1):  # include header
-            table_obj[(row, 1)].set_text_props(ha='left')
-            table_obj[(row, 1)].PAD = 0
-
-    plt.show()
-    '''
-    
+       
     return pca_scores, var_loadings, fig, label_table
 
 
