@@ -99,22 +99,9 @@ subtitle_text = ('Heatmaps generated from weighted UniFrac distance matrices '
 file_pfx = RottenIceVars.file_sets['beta_cluster']['pfx']
 alt_text_pfx = 'Sample clustermap: '
 
-# Samples to include
-months = ['M', 'JN', 'JY10', 'JY11']
-
-fractions = {
-    'I' : {
-        'title'     : 'Ice-only melts',
-        'subset'    : ['IT','IM','IB']
-        },
-    'H' : {
-        'title'     : 'Whole-horizon melts',
-        'subset'    : ['HT','HM','HB']
-        },
-    'F' : {
-        'title'     : 'Fluids',
-        'subset'    : ['BT', 'BM', 'BB', 'B', 'P1', 'P2', 'PW', 'SW', 'Drain']
-        }
+# Correct sample info when sample names are misleading
+correct_sample_info = {
+    'JN-SW' : 'BW'
     }
 
 # Plot variables
@@ -146,7 +133,6 @@ month_cmap = {
 # Based on the standard colors used in RottenIceVars
 fraction_cmap = RottenIceVars.plotColorsByFraction
 
-
 months = {
     'M'     : 'May',
     'JN'    : 'June',
@@ -165,7 +151,7 @@ fractions = {
         },
     'F' : {
         'title'     : 'Fluids',
-        'subset'    : ['BT', 'BM', 'BB', 'B','P1','P2','PW','SW','Drain']
+        'subset'    : ['BT', 'BM', 'BB', 'B','P1','P2','PW','BW','SW','Drain']
         }
     }
     
@@ -194,11 +180,15 @@ def parseSamples(distMatrix):
         else:
             month = ssplit[0]
             fraction = ssplit[-2]    
-        name = ssplit[-1]
-        headerlist.append((template, month, fraction, name))
+        replicate = ssplit[-1]
+        
+        if month + '-' + fraction in list(correct_sample_info):
+            fraction = correct_sample_info[month + '-' + fraction]
+        
+        headerlist.append((template, month, fraction, replicate))
         
     distMatrix.columns = pd.MultiIndex.from_tuples(
-        headerlist, names = ['Template','Month','Fraction','Sample'])
+        headerlist, names = ['Template','Month','Fraction','Replicate'])
     distMatrix.index = distMatrix.columns
     
     return distMatrix
@@ -244,6 +234,8 @@ def buildPlot(data, color_category, figsize, filename):
         metric=None # Don't need to re-calculate distances since it's a distance matrix
         )
     
+    p.ax_heatmap.set_xlabel('Sample')
+    p.ax_heatmap.set_ylabel('Sample')
     p.cax.set_title('Distance')
 
     
@@ -260,7 +252,10 @@ def genHTMLPage(headstr, filepath):
         for s in sets:
             htmltxt = (headstr
                        + '<h1>' + gene + ' clustered heatmaps '
-                       + '(' + sets[s]['title'] + ')</h1>')
+                       + '(' + sets[s]['title'] + ')</h1>'
+                       + '<p><img src = "MonthFractionKey_horiz.png"'
+                       + ' height = 150></p>'
+                       )
             
             if s == 'all':
                 htmltxt = (htmltxt
@@ -314,15 +309,6 @@ def genHTMLPage(headstr, filepath):
 #%%
 # Main function
 
-# Build the file navigation HTML
-nav_html = RottenIceVars.nav_html_start
-for gene in genes:
-    set_html = '  <em>' + gene + ': </em>'
-    for s in sets:
-        set_html = (set_html + ' <a href = "' + file_pfx + '_' + gene + '_' 
-                    + s + '.html">' + sets[s]['title'] + '</a> /')
-    nav_html = nav_html + set_html[:-1] + '  //  '
-nav_html = nav_html[:-6] 
 
 # Load the distance matrices
 directory = os.getcwd()
@@ -386,6 +372,16 @@ for gene in genes:
         
 
 # Generate HTML pages
+# Build the file navigation HTML
+nav_html = RottenIceVars.nav_html_start
+for gene in genes:
+    set_html = '  <em>' + gene + ': </em>'
+    for s in sets:
+        set_html = (set_html + ' <a href = "' + file_pfx + '_' + gene + '_' 
+                    + s + '.html">' + sets[s]['title'] + '</a> /')
+    nav_html = nav_html + set_html[:-1] + '  //  '
+nav_html = nav_html[:-6] 
+# Add the header information
 headstr = RottenIceModules.genHTMLhead(
     title, page_nav_html = nav_html, subtitle_text = subtitle_text)
 genHTMLPage(headstr, filepath_pfx)
