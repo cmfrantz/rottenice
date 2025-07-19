@@ -85,10 +85,10 @@ fraction = 'H'
 gene = 'cDNA'
 
 monthmap = {
-    'M-CS'     : 'May',
-    'JN-CS'    : 'June',
-    'JY10'  : 'July - dirty floe',
-    'JY11'  : 'July - clean floe'
+    'M-CS'      : 'May',
+    'JN-CS'     : 'June',
+    'JY10'      : 'July - dirty floe',
+    'JY11'      : 'July - clean floe'
     }
 
 replicates = [1,2,3]

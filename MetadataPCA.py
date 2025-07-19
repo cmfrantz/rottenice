@@ -31,6 +31,7 @@ You will also need to have the following files
     in the same directory as this script.
 They contain modules and variables that this script calls.
     RottenIceModules.py
+    RottenIceVars.py
 If you get an error indicating that one of these modules is not found,
     change the working directory to the directory containing these files.
 
@@ -55,6 +56,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 import numpy as np
 import RottenIceModules
+import RottenIceVars
 
 ####################
 # VARIABLES
@@ -62,20 +64,16 @@ import RottenIceModules
 
 # Colors for coding the different months / floes
 color_col = 'loc_id'    # Defines the column in the metadata table that contains the information mapped to colors below
-color_map = {      # Colors based on the viridis palette
-	'M-CS' :   '#441a54',  # Purple
-	'JN-CS':   '#3c538c',  # Blue
-	'JY10':    '#abd03a',  # Light green
-	'JY11':    '#fce61f'   # Yellow
+color_map = {      # Pulls color hex values based on the standard color set
+	'M-CS'     : RottenIceVars.plotColorsByMonth['M'],
+	'JN-CS'    : RottenIceVars.plotColorsByMonth['JN'],
+	'JY10'     : RottenIceVars.plotColorsByMonth['JY10'],
+	'JY11'     : RottenIceVars.plotColorsByMonth['JY11']
     }
 
 # Markers for coding the different horizons
 marker_col = 'fraction' # Defines the column in the metadata table that contains the information mapped to markers below
-marker_map = {
-    'HT'    : '^',
-    'HM'    : 's',
-    'HB'    : 'v'
-    }
+marker_map = RottenIceVars.plotMarkersByFraction
 
 # Sets of variables to plot, each is a different PCA analysis
 varsets = {
@@ -143,7 +141,9 @@ if __name__ == '__main__':
         
         # Save the biplot figure
         biplot_fig.savefig(
-            directory + '\\' + 'Metadata_Biplot ' + varset + '.png', transparent = True)
+            directory + '\\' + 'Metadata_Biplot ' + varset + '.png',
+            transparent = True)
         biplot_fig.savefig(
-            directory + '\\' + 'Metadata_Biplot ' + varset + '.pdf', format = 'pdf')
+            directory + '\\' + 'Metadata_Biplot ' + varset + '.pdf',
+            format = 'pdf')
     

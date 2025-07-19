@@ -122,7 +122,7 @@ cmap = RottenIceVars.cmap
 genes = {
     '16S'   : {},
     '18S'   : {},
-    '18S PrimProd' : {}
+    '18S-PP' : {}
     }
 templates = ['DNA', 'cDNA']
 sets = {
@@ -133,7 +133,7 @@ sets = {
     }
 
 # Categorical color palette to identify the months
-# Based on this palette: https://www.color-hex.com/color-palette/22257
+# Based on the standard colors used in RottenIceVars
 month_cmap = {
     'M'     : RottenIceVars.plotColorsByMonth['M'],
     'JN'    : RottenIceVars.plotColorsByMonth['JN'],
@@ -141,34 +141,11 @@ month_cmap = {
     'JY11'  : RottenIceVars.plotColorsByMonth['JY11'],
     'Blank' : '#FFFFFF'     # White
     }
-    
+ 
 # Categorical color palette to identify the fractions
-# Based on this palette: https://www.color-hex.com/color-palette/91134
-fraction_cmap = {
-    # Ice-only melts in tints of #4F518B
-    'IT'    : [149,150,185],
-    'IM'    : [114,115,162],
-    'IB'    : [79,81,139],
-    # Whole-core melts in tints of #51729c
-    'HT'    : [150,170,195],
-    'HM'    : [115,142,175],
-    'HB'    : [81,114,156],
-    # Brines in tints of #4b8ba7
-    'BT'    : [147,185,202],
-    'BM'    : [110,162,184],
-    'BB'    : [75,139,167],
-    'B'     : [75,139,167],
-    # Sackhole percolates and drains in tints of #7fb8b1
-    'P1'    : [178,212,208],
-    'P2'    : [152,198,192],
-    'Drain' : [127,184,177],
-    # Other fluids
-    'PW'    : [207,237,212],
-    'SW'    : [176,225,184],
-    'Blank' : [255,255,255]
-    }
-for f in fraction_cmap:
-    fraction_cmap[f] = [c/256 for c in fraction_cmap[f]]
+# Based on the standard colors used in RottenIceVars
+fraction_cmap = RottenIceVars.plotColorsByFraction
+
 
 months = {
     'M'     : 'May',
@@ -229,7 +206,10 @@ def parseSamples(distMatrix):
 
 def buildPlot(data, color_category, figsize, filename):
     '''Produces clustered heatmap plot'''
-        
+    
+    '''
+    Old code: shows either month or fraction along top axis
+    
     if color_category == 'month':
         # Map months to colors
         months = data.columns.get_level_values('Month')
@@ -239,6 +219,15 @@ def buildPlot(data, color_category, figsize, filename):
         fractions = data.columns.get_level_values('Fraction')
         color_set = pd.Series(fractions, index = data.columns).map(
             fraction_cmap)
+    '''
+    
+    # Map months to colors along the top of the plot
+    months = data.columns.get_level_values('Month')
+    col_colors = pd.Series(months, index = data.columns).map(month_cmap)
+    
+    # Map fractions to colors along the side of the plot
+    fractions = data.index.get_level_values('Fraction')
+    row_colors = pd.Series(fractions, index = data.index).map(fraction_cmap)
     
     # Convert distance matrix to condensed form that seaborn expects
     condensed = squareform(data.values)
@@ -251,14 +240,18 @@ def buildPlot(data, color_category, figsize, filename):
         data, figsize = (figsize,figsize),
         row_linkage = row_linkage,
         col_linkage = col_linkage,
-        cmap = cmap, col_colors = color_set,
+        cmap = cmap, col_colors = col_colors, row_colors = row_colors,
         metric=None # Don't need to re-calculate distances since it's a distance matrix
         )
+    
+    p.cax.set_title('Distance')
+
     
     # Save heatmap
     p.savefig(filename + '.svg', transparent = True)
     
     return p
+
 
 
 def genHTMLPage(headstr, filepath):   
@@ -372,7 +365,10 @@ for gene in genes:
         # Split out different months
         for month in months:
             print(month)
-            datasets[ds][month] = datasets[ds]['all'].loc[month][month]
+            datasets[ds][month] = datasets[ds]['all'].loc[
+                datasets[ds]['all'].index.get_level_values('Month') == month,
+                datasets[ds]['all'].columns.get_level_values('Month') == month
+            ]
             buildPlot(datasets[ds][month], 'fraction', 10,
                       filename + '_' + month + '_' + ds)
         
