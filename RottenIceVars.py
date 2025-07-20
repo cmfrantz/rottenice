@@ -279,6 +279,8 @@ metadataFullTitle = {
     'depth_in_ice'  : 'Depth below the ice surface (cm)',
     'pH'            : 'pH',
     'temperature'   : 'Temperature (' + r'$\degree$' + 'C)',
+    'bulk_density'  : ('Bulk ice density (g ' + r'$\cdot$'
+                       + ' cm' + r'$^{3}$' + ')'),
     'bulk_ice_density'  : ('Bulk ice density (g ' + r'$\cdot$'
                        + ' cm' + r'$^{3}$' + ')'),
     'salinity_direct' : 'Salinity (from 5 cm puck direct melts; ppt)',
@@ -289,13 +291,18 @@ metadataFullTitle = {
     'salinity'      : 'Salinity (ppt)',
     'SPM'           : 'SPM (mg ' + r'$\cdot$' + ' ml' + r'$^{-1}$' + ')',
     'DOC'           : 'DOC (mg C ' + r'$\cdot$' + ' l' + r'$^{-1}$' + ')',
+    'Chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
     'chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
+    'Phaeo'         : ('Phaeopigments (mg ' + r'$\cdot$'
+                       + ' m' + r'$^{3}$' + ')'),
     'phaeo'         : ('Phaeopigments (mg ' + r'$\cdot$'
                        + ' m' + r'$^{3}$' + ')'),
     'Chl_Phaeo'     : '[Chl]/[Chl+Phaeo]',
     'FoFa'          : r'$F_o/F_a$',
     'PAM'           : 'PAM read' + r'$F_v/F_m$',
     'SedLoad'       : 'Visible sediment load (1 low, 2 med, 3 high)',
+    'bact_cell_ct'  : ('Bacteria (cells ' + r'$\cdot$' + ' ml'
+                       + r'$^{-1}$' + ')'),
     'cell_ct'       : ('Bacteria (cells ' + r'$\cdot$' + ' ml'
                        + r'$^{-1}$' + ')'),
     'CTC'           : 'CTC %',
@@ -343,8 +350,8 @@ file_sets = {
         },
     'metadata_biplots'      : {
         'title'     : 'Metadata PCA biplots',
-        'pfx'       : 'metadata_biplot',
-        'land_page' : 'metadata_biplots_physical.html'
+        'pfx'       : 'biplot',
+        'land_page' : 'MetadataBiplots/biplot_physical.html'
         },
     'algae_barplots'        : {
         'title'     : 'Phytoplankton ID bar plots',
