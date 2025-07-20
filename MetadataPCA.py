@@ -16,10 +16,12 @@ This script was created as part of the Rotten Ice Project.
 Arguments:  None
 
 Requirements:      
-    Metadata table (tsv) for the rotten ice samples.
-        This is the same metadata table format as used in QIIME2
-        where rows = sample names
-        columns = metadata parameters
+    Sample Metadata (measurements) table (csv)
+        Where rows = samples, columns = metadata characteristics
+        Header row and index column are specified in the variables below
+        This is NOT the same metadata table used in QIIME2, which provides
+        metadata for each sample-gene-template sequenced. It is the master
+        metadata table of environmental measurements for each sample.
 
 Example in command line:
     python MetadataPCA.py
@@ -77,30 +79,70 @@ marker_map = RottenIceVars.plotMarkersByFraction
 
 # Sets of variables to plot, each is a different PCA analysis
 varsets = {
-    'physical parameters'   : ['temperature','salinity','bulk_ice_density'],
-    'habitat'               : ['temperature','salinity','bulk_ice_density',
-                               'SPM','SedLoad','DOC','POC','nitrogen','pEPS'],
-    'nutrients'             : ['DOC','POC','pEPS','nitrogen','CN'],
-    'carbon'                : ['DOC','POC','pEPS','gels_total'],
-    'cells'                 : ['cell_ct','CTC','diatom_ct'],
-    'photosynthesis'        : ['chl','phaeo','FoFa','PAM',
-                               'diatom_ct','phyto_ct_all','phyto_ct_select',
-                               'phyto_ct_other'],
-    'all_numeric'           : ['date_num','lat','lon','depth_in_ice',
-                               'salinity','SPM','DOC','chl','phaeo','FoFa',
-                               'PAM','SedLoad','cell_ct','CTC','pEPS','POC',
-                               'nitrogen','CN','temperature',
-                               'salinity_bulk_phys','bulk_ice_density',
-                               'diatom_ct','phyto_ct_all','phyto_ct_select',
-                               'phyto_ct_other','gels_total'],
-    'all_numeric_noNaN'     :  ['date_num','lat','lon','depth_in_ice',
-                               'salinity','DOC','chl','phaeo','FoFa',
-                               'PAM','cell_ct','CTC','pEPS','POC',
-                               'nitrogen','CN',
-                               'diatom_ct','phyto_ct_all','phyto_ct_select',
-                               'phyto_ct_other']
+    'physical'      : {
+        'title'     : 'Physical parameters',
+        'varlist'   : ['temperature','salinity','bulk_ice_density']
+        },
+    'habitat'       : {
+        'title'     : 'Habitat parameters',
+        'varlist'   : ['temperature','salinity','bulk_ice_density',
+                       'SPM','SedLoad','DOC','POC','nitrogen','pEPS']
+        },
+    'nutrients'     : {
+        'title'     : 'Nutrients',
+        'varlist'   : ['DOC','POC','pEPS','nitrogen','CN']
+        },
+    'carbon'        : {
+        'title'     : 'Carbon fractions',
+        'varlist'   : ['DOC','POC','pEPS','gels_total']
+        },
+    'cells'         : {
+        'title'     : 'Cell counts and activity',
+        'varlist'   : ['cell_ct','CTC','phyto_ct_all','diatom_ct']
+        },
+    'photosynthesis' : {
+        'title'     : 'Measures of photosynthesis',
+        'varlist'   : ['chl','phaeo','FoFa','PAM',
+                       'diatom_ct','phyto_ct_all','phyto_ct_select',
+                       'phyto_ct_other']
+        },
+    'all-numeric'   : {
+        'title'     : 'All numeric metadata',
+        'varlist'   : ['date_num','lat','lon','depth_in_ice',
+                       'salinity','SPM','DOC','chl','phaeo','FoFa',
+                       'PAM','SedLoad','cell_ct','CTC','pEPS','POC',
+                       'nitrogen','CN','temperature',
+                       'salinity_bulk_phys','bulk_ice_density',
+                       'diatom_ct','phyto_ct_all','phyto_ct_select',
+                       'phyto_ct_other','gels_total']
+        },
+    'all-numeric-noNaN' : {
+        'title'     : ('All numeric metadata for which all analyzed samples '
+                       + 'have measured values (no NaN values)'),
+        'varlist'   : ['date_num','lat','lon','depth_in_ice',
+                       'salinity','DOC','chl','phaeo','FoFa',
+                       'PAM','cell_ct','CTC','pEPS','POC',
+                       'nitrogen','CN',
+                       'diatom_ct','phyto_ct_all','phyto_ct_select',
+                       'phyto_ct_other']
+        }
     }
 
+# Info about file naming
+file_info = RottenIceVars.file_sets['metadata_biplots']
+out_filename = file_info['pfx']
+title = file_info['title']
+
+# HTML code for the for the HTML files
+# Subheading text (Part II after the level number)
+subtitle_text = '''
+<p>Principal Correlation Analysis biplot showing PCA of metadata parameters
+(markers) along with how different metadata parameters influence PCA space
+(vectors). PCA calculations performed using the 
+<a href="https://scikit-learn.org/">scikit-learn package</a> (1.7) for python. 
+Created using the script <a href="https://github.com/cmfrantz/rottenice">
+MetadataPCA.py</a>. Analysis done by C. Frantz, July 2025.</p>
+'''
 
 #%%
 
@@ -112,7 +154,8 @@ if __name__ == '__main__':
     
     # Import Metadata table
     filename, directory, metadata, = RottenIceModules.fileGet(
-        'Select metadata table', tabletype = 'metadata')
+        'Select metadata file (from qiime)',
+        tabletype = 'metadata-qiime')
     metadata = metadata.dropna(how = 'all')
     metadata = metadata.replace('na', np.nan)
     
@@ -127,23 +170,57 @@ if __name__ == '__main__':
         (metadata['template'] == 'DNA') &
         (metadata['replicate'] == 1)
         ]
-    samples = list(meta_trimmed.index)
+    samples = list(meta_trimmed.index)    
     
+    # Set up file navigation HTML
+    filenames = [(varset, out_filename + '_' + varset) for varset in varsets]
+    nav_html = RottenIceVars.nav_html_start
+    for varset in filenames:
+        nav_html += f' <a href="{varset[1]}.html">{varset[0]}</a> /'
+    nav_html = nav_html[:-2]
+    
+    # Build the biplots
     for varset in varsets:
         print('Plotting ' + varset + 'PCA biplot')
-        variables = varsets[varset]
+        variables = varsets[varset]['varlist']
         
         # Run PCA & Biplot script
-        scores, loadings, biplot_fig = RottenIceModules.biplot(
-            meta_trimmed, samples, variables, 'Metadata PCA Biplot: ' + varset,
+        scores, loadings, biplot_fig, arrow_key = RottenIceModules.biplot(
+            meta_trimmed, samples, variables,
+            'Metadata PCA Biplot: ' + varsets[varset]['title'],
             color_col, color_map, marker_col, marker_map,
             n_arrows = 10, marker_size = 100)
         
         # Save the biplot figure
         biplot_fig.savefig(
-            directory + '\\' + 'Metadata_Biplot ' + varset + '.png',
-            transparent = True)
+            directory + '\\' + out_filename + '_' + varset + '.png',
+            transparent = True, bbox_inches='tight')
         biplot_fig.savefig(
-            directory + '\\' + 'Metadata_Biplot ' + varset + '.pdf',
+            directory + '\\' + out_filename + '_' + varset + '.pdf',
             format = 'pdf')
-    
+   
+        # Generate HTML per dataset
+        html_path = f"{directory}\\{out_filename}_{varset}.html"
+        html_title = file_info['title']
+        html_body = subtitle_text
+        vartext = ''
+        for var in variables:
+            vartext = vartext + (
+                '<li>' + var + ': '
+                + RottenIceModules.latex_to_html(
+                    RottenIceVars.metadataFullTitle[var])
+                + '</li>')
+        html_body = (html_body
+                     + '<p><b>Variables included in this analysis:</b><ul>'
+                     +  vartext + '</ul></p>')
+
+        RottenIceModules.genHTMLfile(
+            html_path,
+            html_title,
+            html_body,
+            image_filepaths=[out_filename + '_' + varset + '.png'],
+            alt_text=['PCA Biplot: ' + varset],
+            page_nav_html=nav_html
+        )
+
+        print(f'Saved HTML and images for {varset} to {directory}')

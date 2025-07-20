@@ -306,7 +306,7 @@ if __name__ == '__main__':
 
     # Import metadata
     filename, directory, metadata = RottenIceModules.fileGet(
-        'Select metadata table', tabletype='metadata-qiime')
+        'Select metadata table (from qiime)', tabletype='metadata-qiime')
     metadata = metadata.dropna(how='all').replace('na', np.nan)
     metadata = metadata[varlist]
 

@@ -271,30 +271,37 @@ p_cutoff = 0.05
 # Metadata variable full titles
 metadataFullTitle = {
     'day_num'       : 'Calendar day',
+    'date_num'      : 'Calendar day',
     'coord_lat'     : 'Latitude',
     'coord_lon'     : 'Longitude',
+    'lat'           : 'Latitude',
+    'lon'           : 'Longitude',
+    'depth_in_ice'  : 'Depth below the ice surface (cm)',
     'pH'            : 'pH',
     'temperature'   : 'Temperature (' + r'$\degree$' + 'C)',
-    'bulk_density'  : ('Bulk ice density (g ' + r'$\cdot$'
+    'bulk_ice_density'  : ('Bulk ice density (g ' + r'$\cdot$'
                        + ' cm' + r'$^{3}$' + ')'),
     'salinity_direct' : 'Salinity (from 5 cm puck direct melts; ppt)',
+    'salinity_bulk_phys' : 'Salinity (from 5 cm puck direct melts; ppt)',
     'salinity_lab'  : ('Salinity (from lab melts; whole-horizon melts are '
                        + 'mixed with ASW; ppt)'),
     'salinity_comb' : 'Salinity (ppt)',
     'salinity'      : 'Salinity (ppt)',
     'SPM'           : 'SPM (mg ' + r'$\cdot$' + ' ml' + r'$^{-1}$' + ')',
     'DOC'           : 'DOC (mg C ' + r'$\cdot$' + ' l' + r'$^{-1}$' + ')',
-    'Chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
-    'Phaeo'         : ('Phaeopigments (mg ' + r'$\cdot$'
+    'chl'           : 'Chlorophyll (mg ' + r'$\cdot$' + ' m' + r'$^{3}$' + ')',
+    'phaeo'         : ('Phaeopigments (mg ' + r'$\cdot$'
                        + ' m' + r'$^{3}$' + ')'),
     'Chl_Phaeo'     : '[Chl]/[Chl+Phaeo]',
     'FoFa'          : r'$F_o/F_a$',
     'PAM'           : 'PAM read' + r'$F_v/F_m$',
     'SedLoad'       : 'Visible sediment load (1 low, 2 med, 3 high)',
-    'bact_cell_ct'  : ('Bacteria (cells ' + r'$\cdot$' + ' ml'
+    'cell_ct'       : ('Bacteria (cells ' + r'$\cdot$' + ' ml'
                        + r'$^{-1}$' + ')'),
     'CTC'           : 'CTC %',
     'bact_active_cell_ct' :  ('Active cells (cells ' + r'$\cdot$' + ' ml'
+                              + r'$^{-1}$' + ')'),
+    'cells_act'     : ('Active cells (cells ' + r'$\cdot$' + ' ml'
                               + r'$^{-1}$' + ')'),
     'diatom_ct'     : ('Diatoms (cells ' + r'$\cdot$' + ' ml'
                        + r'$^{-1}$' + ')'),
@@ -327,15 +334,23 @@ file_sets = {
     'chem_heatmaps'         : {
         'title'     : 'Metadata heatmaps',
         'pfx'       : 'chem_heatmaps',
-        'land_page' : 'chem_heatmaps.html'},
+        'land_page' : 'chem_heatmaps.html'
+        },
     'metadata_boxplots'     : {
         'title'     : 'Metadata box plots',
         'pfx'       : 'metadata_whiskerplots',
-        'land_page' : 'metadata_whiskerplots.html'},
+        'land_page' : 'metadata_whiskerplots.html'
+        },
+    'metadata_biplots'      : {
+        'title'     : 'Metadata PCA biplots',
+        'pfx'       : 'metadata_biplot',
+        'land_page' : 'metadata_biplots_physical.html'
+        },
     'algae_barplots'        : {
         'title'     : 'Phytoplankton ID bar plots',
         'pfx'       : 'PhytoID_barplots',
-        'land_page' : 'Algae/PhytoID_barplots_L1_viridis.html'},
+        'land_page' : 'Algae/PhytoID_barplots_L1_viridis.html'
+        },
     'ASV_barplots'          : {
         'title'     : 'Sequencing ASV bar plots',
         'pfx'       : 'ASV_barplots',
@@ -344,11 +359,13 @@ file_sets = {
     'alpha_metrics'         : {
         'title'     : 'Alpha diversity metrics',
         'pfx'       : 'alpha_boxplots',
-        'land_page' : 'alpha-div/alpha_boxplots_16S_DNA.html'},
+        'land_page' : 'alpha-div/alpha_boxplots_16S_DNA.html'
+        },
     'beta_cluster'          : {
         'title'     : 'Beta diversity sample cluster heatmaps',
         'pfx'       : 'beta_clustermap',
-        'land_page' : 'B-div-heatmaps/beta_clustermap_16S_all.html'},
+        'land_page' : 'B-div-heatmaps/beta_clustermap_16S_all.html'
+        },
     'spearman_taxonomy'     : {
         'title'     : ('Metadata vs. taxonomic group '
                        + 'Spearman correlation analysis'),

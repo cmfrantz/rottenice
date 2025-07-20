@@ -29,6 +29,7 @@ Dependencies Install:
     pip install matplotlib
     pip install math
     pip install bokeh
+    pip install re
 
 
 Copyright (C) 2020  Carie M. Frantz
@@ -55,6 +56,7 @@ import os
 from tkinter import *
 from tkinter import filedialog
 from progress.bar import Bar
+import re
 
 import numpy as np
 import pandas as pd
@@ -1506,4 +1508,48 @@ def genPlotLevelNavHTML(filenames):
                     + 'L' + str(i+1) + '</a>  /')
     nav_html = nav_html[:-3]
     return nav_html
+
+
+def latex_to_html(s):
+    '''
+    Convert a LaTeX-style matplotlib string to HTML.
+    Handles common math symbols, superscripts, and subscripts.
+    '''
+    # Mapping of LaTeX commands to HTML entities
+    replacements = {
+        r'\cdot': '&middot;',
+        r'\mu': '&mu;',
+        r'\degree': '&deg;',
+        r'\alpha': '&alpha;',
+        r'\beta': '&beta;',
+        r'\gamma': '&gamma;',
+        r'\pm': '&plusmn;',
+        r'\leq': '&le;',
+        r'\geq': '&ge;',
+        r'\rightarrow': '&rarr;',
+        r'\leftarrow': '&larr;',
+        r'\times': '&times;',
+        r'\div': '&divide;',
+    }
+
+    # Replace LaTeX symbols
+    for latex, html in replacements.items():
+        s = s.replace(latex, html)
+
+    # Superscripts: $^{3}$ -> <sup>3</sup>
+    s = re.sub(r'\$\^\{(.*?)\}\$', r'<sup>\1</sup>', s)
+
+    # Subscripts: $_{2}$ -> <sub>2</sub>
+    s = re.sub(r'\$_\{(.*?)\}\$', r'<sub>\1</sub>', s)
+
+    # Math expressions like $F_o/F_a$ -> F<sub>o</sub>/F<sub>a</sub>
+    def convert_math_expr(m):
+        expr = m.group(1)
+        expr = re.sub(r'([A-Za-z])_([A-Za-z0-9]+)', r'\1<sub>\2</sub>', expr)
+        expr = re.sub(r'([A-Za-z])\^([A-Za-z0-9]+)', r'\1<sup>\2</sup>', expr)
+        return expr
+
+    s = re.sub(r'\$(.*?)\$', convert_math_expr, s)
+
+    return s
 
