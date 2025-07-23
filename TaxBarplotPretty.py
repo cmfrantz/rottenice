@@ -71,7 +71,8 @@ import RottenIceModules
 
 datasets = ['16S noUEMC QC', '18S noUBA QC'] # List of the datasets to generate plots for
 colorcol = 'color'  # The column header in the data table that defines the color hex value
-ignorecols = ['color', 'ranking', 'max', 'avg']     # Non-data columns in the data table
+ignorecols = ['supergroup','Big','Primary Producer','color',
+              'ranking','max','avg']     # Non-data columns in the data table
 fontsize = 11 # Font size for the plot
 title = 'Relative abundance of major taxa' # Title header for the plot
 monthmap = {
@@ -97,6 +98,7 @@ for d in datasets:
         'Select taxonomy-collapsed file for ' + d,
         file_type='csv', header_row=0, index_col=0
     )
+    table = table[table.index.notnull()]
     
     # Get the list of colors
     colormap = table[colorcol]
