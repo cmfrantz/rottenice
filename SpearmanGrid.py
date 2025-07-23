@@ -34,8 +34,8 @@ Requirements:
         where rows = taxonomy calls, columns = samples,
         values = taxonomy counts for each sample
         These files are produced by exporting Level 7 taxonomic data from
-        QIIME2 barplots in Qiime2View, transposing them,
-        and seperating them by template (cDNA vs. DNA)
+        QIIME2 barplots in Qiime2View (unmodified; this script takes care of
+                                       the rest)
 
 Example in command line:
     python SpearmanGrid.py
@@ -78,6 +78,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
+import os
 import pandas as pd
 
 import numpy as np
@@ -97,10 +98,17 @@ import RottenIceVars
 # VARIABLES
 ####################
 
+# Outputdirectory
+# Define this if there is a directory where files should go.
+# If None, the default is the working directory
+outdir = None
+if outdir == None:
+    outdir = os.getcwd()
+
+
 # Types of sequence data
 genes = ['16S','18S','Eukaryotic Primary Producers (18S)']
 max_level = 7
-templates = RottenIceVars.templates
 
 # Samples to exclude
 otherlist = RottenIceVars.other_samples
@@ -127,7 +135,7 @@ p_cutoff = 0.01
 # Number of taxonomic groups to consider in each plot
 n_groups = 20
 
-# Info about file naming
+# Info about file naming & filepath
 file_info = RottenIceVars.file_sets['spearman_taxonomy']
 out_filename = file_info['pfx']
 title = file_info['title']
@@ -156,6 +164,37 @@ SpearmanGrid.py</a>. Analysis done by C. Frantz, June 2025.
 ####################
 # FUNCTIONS
 ####################
+
+def split_by_template(df):
+    """
+    Splits a DataFrame into two based on the template type in the sample ID index.
+    Assumes sample IDs are in the format 'sample.gene-template'.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe with sample IDs as the index.
+
+    Returns
+    -------
+    dna_df : pandas.DataFrame
+        DataFrame containing only DNA samples.
+    cdna_df : pandas.DataFrame
+        DataFrame containing only cDNA samples.
+    """
+    # Ensure index is string type
+    df.index = df.index.astype(str)
+
+    # Boolean masks for DNA and cDNA
+    is_dna = df.index.str.endswith('-DNA')
+    is_cdna = df.index.str.endswith('-cDNA')
+
+    # Split the DataFrame
+    dna_df = df[is_dna].copy()
+    cdna_df = df[is_cdna].copy()
+
+    return dna_df, cdna_df
+
 
 def buildCorrTable(metadata, abundance_table, varlist, samples,
                    significance = 0.05):
@@ -313,11 +352,20 @@ if __name__ == '__main__':
     # Import taxonomy tables
     tax_tables = {}
     for gene in genes:
-        for template in templates:
-            dset = gene + '-' + template
-            filename, directory, data = RottenIceModules.fileGet(
-                'Select ' + dset + ' ASV table', tabletype='OTU-table', directory=directory)
-            tax_tables[dset] = data
+        # Get the ASV table
+        filename, directory, data = RottenIceModules.fileGet(
+            'Select ' + gene + ' ASV table', tabletype='OTU-table',
+            directory=directory)
+        
+        # Remove metadata columns / any columns that do not contain taxa
+        data_clean = data.loc[:, data.columns.str.startswith('d__')]
+        
+        # Split the table by template
+        dna_df, cdna_df = split_by_template(data_clean)
+        
+        # Save the transposed tables (samples as columns, taxa as rows)
+        tax_tables[gene + '-' + 'DNA'] = dna_df.T
+        tax_tables[gene + '-' + 'cDNA'] = cdna_df.T
 
     # Set up file navigation HTML
     filenames = [(dset, out_filename + '_' + dset) for dset in tax_tables]
@@ -366,13 +414,13 @@ if __name__ == '__main__':
 
             # Save figure
             img_filename = f"{out_filename}_{dset}_L{l+1}.svg"
-            full_img_path = f"{directory}\\{img_filename}"
+            full_img_path = f"{outdir}\\{img_filename}"
             fig.savefig(full_img_path, transparent=True)
             img_filenames.append(img_filename)
             plt.close(fig)
 
         # Generate HTML per dataset
-        html_path = f"{directory}\\{out_filename}_{dset}.html"
+        html_path = f"{outdir}\\{out_filename}_{dset}.html"
         html_title = file_info['title']
         html_body = subtitle_text
 
@@ -388,4 +436,4 @@ if __name__ == '__main__':
             page_nav_html=nav_html
         )
 
-        print(f'Saved HTML and images for {dset} to {directory}')
+        print(f'Saved HTML and images for {dset} to {outdir}')
