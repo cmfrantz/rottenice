@@ -82,7 +82,50 @@ monthmap = {
     'JY11'  : 'July 11 clean floe'
     }
 
+# Define the sample list to plot. If False, plots all samples.
+samplelist = False
+#samplelist = RottenIceModules.genSampleList(['M','JN','JY10','JY11'],['HT','HM','HB'])
 
+# Define the template to include in the plot (can be 'DNA', 'cDNA', or 'both')
+template = 'both'
+#template = 'cDNA'
+
+
+def filter_sample_ids(sample_ids, samplelist, template='both'):
+    """
+    Filters sample IDs by matching sample names and template.
+
+    Parameters
+    ----------
+    sample_ids : list of str
+        List of full sample ID strings (e.g., 'M-Drain-1.16S-cDNA').
+    samplelist : list of str
+        List of sample names (e.g., ['M-CS-HT','M-CS-HM','M-Drain']) to match
+        at the beginning of each sample ID.
+    template : str
+        Template to match (either 'DNA','cDNA', or 'both').
+
+    Returns
+    -------
+    list of str
+        Filtered sample IDs that match both the template and the specified site list.
+    """
+    result = []
+    for sid in sample_ids:
+        try:
+            ssplit = sid.split('.')
+            sample = ssplit[0].rsplit('-', 1)[0]  # Get site name (e.g., 'M-Drain')
+            s_template = ssplit[1].split('-')[1]  # Get the template
+            if sample in samplelist:
+                if template == 'both':
+                    result.append(sid)
+                elif template in ['DNA','cDNA'] and s_template == template:
+                    result.append(sid)
+        except IndexError:
+            continue  # Skip malformed IDs
+    return result
+
+#%%
 ####################
 # MAIN FUNCTION
 ####################
@@ -107,6 +150,12 @@ for d in datasets:
     cols = [c for c in table.columns if c not in ignorecols]
     datatable = table[cols]
     
+    # Trim further to just the samples of interest
+    if samplelist != False:
+        include_samples = filter_sample_ids(
+            cols, samplelist, template = template)
+        datatable = table[include_samples]
+                
     # Parse sample names into components for labeling the plot
     samples_parsed = pd.DataFrame(
         index=datatable.columns, columns=['month', 'label', 'template'])
