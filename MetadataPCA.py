@@ -56,7 +56,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 # IMPORTS
 ####################
+import pandas as pd
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 import RottenIceModules
 import RottenIceVars
 
@@ -81,30 +84,36 @@ marker_map = RottenIceVars.plotMarkersByFraction
 varsets = {
     'physical'      : {
         'title'     : 'Physical parameters',
-        'varlist'   : ['temperature','salinity','bulk_ice_density']
+        'varlist'   : ['temperature','salinity','bulk_ice_density'],
+        'arrows'    : True
         },
     'habitat'       : {
         'title'     : 'Habitat parameters',
         'varlist'   : ['temperature','salinity','bulk_ice_density',
-                       'SPM','SedLoad','DOC','POC','nitrogen','pEPS']
+                       'SPM','SedLoad','DOC','POC','nitrogen','pEPS'],
+        'arrows'    : True
         },
     'nutrients'     : {
         'title'     : 'Nutrients',
-        'varlist'   : ['DOC','POC','pEPS','nitrogen','CN']
+        'varlist'   : ['DOC','POC','pEPS','nitrogen','CN'],
+        'arrows'    : True
         },
     'carbon'        : {
         'title'     : 'Carbon fractions',
-        'varlist'   : ['DOC','POC','pEPS','gels_total']
+        'varlist'   : ['DOC','POC','pEPS','gels_total'],
+        'arrows'    : True
         },
     'cells'         : {
         'title'     : 'Cell counts and activity',
-        'varlist'   : ['cell_ct','CTC','phyto_ct_all','diatom_ct']
+        'varlist'   : ['cell_ct','CTC','phyto_ct_all','diatom_ct'],
+        'arrows'    : True
         },
     'photosynthesis' : {
         'title'     : 'Measures of photosynthesis',
         'varlist'   : ['chl','phaeo','FoFa','PAM',
                        'diatom_ct','phyto_ct_all','phyto_ct_select',
-                       'phyto_ct_other']
+                       'phyto_ct_other'],
+        'arrows'    : True
         },
     'all-numeric'   : {
         'title'     : 'All numeric metadata',
@@ -114,7 +123,8 @@ varsets = {
                        'nitrogen','CN','temperature',
                        'salinity_bulk_phys','bulk_ice_density',
                        'diatom_ct','phyto_ct_all','phyto_ct_select',
-                       'phyto_ct_other','gels_total']
+                       'phyto_ct_other','gels_total'],
+        'arrows'    : 10
         },
     'all-numeric-noNaN' : {
         'title'     : ('All numeric metadata for which all analyzed samples '
@@ -124,7 +134,16 @@ varsets = {
                        'PAM','cell_ct','CTC','pEPS','POC',
                        'nitrogen','CN',
                        'diatom_ct','phyto_ct_all','phyto_ct_select',
-                       'phyto_ct_other']
+                       'phyto_ct_other'],
+        'arrows'    : 10
+        },
+    'interesting' : {
+        'title'     : ('Metadata parameters of particular interest'),
+        'varlist'   : ['date_num','salinity',
+                       'DOC','chl','phaeo','FoFa','PAM','cell_ct','CTC',
+                       'pEPS','POC','nitrogen','CN',
+                       'diatom_ct','phyto_ct_other'],
+        'arrows'    : True
         }
     }
 
@@ -170,7 +189,20 @@ if __name__ == '__main__':
         (metadata['template'] == 'DNA') &
         (metadata['replicate'] == 1)
         ]
-    samples = list(meta_trimmed.index)    
+    samples = list(meta_trimmed.index)
+    
+    # Compute and save metadata correlations
+    numeric_df = meta_trimmed.select_dtypes(include='number')
+    corr_matrix = numeric_df.corr(method='spearman')
+    corr_matrix.to_csv(
+        directory + '\\' + out_filename + '_correlation-matrix.csv')
+    plt.figure(figsize=(12,10))
+    sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap = RottenIceVars.cmap,
+                center=0)
+    plt.title('Metadata Spearman Correlation Matrix')
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(directory + '\\' + out_filename + '_correlation-heatmap.svg')
     
     # Set up file navigation HTML
     filenames = [(varset, out_filename + '_' + varset) for varset in varsets]
@@ -179,7 +211,8 @@ if __name__ == '__main__':
         nav_html += f' <a href="{varset[1]}.html">{varset[0]}</a> /'
     nav_html = nav_html[:-2]
     
-    # Build the biplots
+    # Plot Set 1
+    # Build the biplots for each set of variables defined
     for varset in varsets:
         print('Plotting ' + varset + 'PCA biplot')
         variables = varsets[varset]['varlist']
@@ -189,7 +222,7 @@ if __name__ == '__main__':
             meta_trimmed, samples, variables,
             'Metadata PCA Biplot: ' + varsets[varset]['title'],
             color_col, color_map, marker_col, marker_map,
-            n_arrows = 10, marker_size = 100)
+            arrows = varsets[varset]['arrows'], marker_size = 100)
         
         # Save the biplot figure
         biplot_fig.savefig(

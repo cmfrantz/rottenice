@@ -1182,8 +1182,8 @@ def genLegendOutside(taxlist, colors, key_val_ht = 24, key_top_pad = 40):
 
 def biplot(data_table, samples, variables, title,
            color_col, color_map, marker_col, marker_map,
-           n_arrows=None, number_arrows = False, marker_size = 10,
-           plot_size = 6, legend_pad = 3):
+           arrows=True, number_arrows = False,
+           marker_size = 10, plot_size = 6, legend_pad = 3):
     '''
     Creates a PCA biplot of metadata
 
@@ -1208,17 +1208,17 @@ def biplot(data_table, samples, variables, title,
         Dictionary mapping values in marker_col to marker shapes.
     title : str
         Title for labeling the plot
-    n_arrows : int, optional
-        The maximum number of variable vector arrows to display.
-        If defined, the plot will display only the N most important variables.
-        The default is None.
+    arrows : bool, int, or list of str, optional
+        If True, all vectors are plotted (default)
+        If False, no vectors are plotted
+        If an integer N is passed, the plot will display only the N most
+            important variables.
+        If a list of strings is passed, the plot will display vectors for
+            the variables matching strings in the list.
     number_arrows : boolean, optional
         Whether or not to number the arrows and add an additional key instead
         of labeling them with the variable names.
         The default is False.
-    arrow_scale : float, optional
-        Factor used to scale the variable vector arrows. The default is 1.0.
-        Increasing this makes the arrows longer/larger.
     marker_size : int, optional
         Size of the sample markers in the PCA plot. The default is 10.
     plot_size : int, optional
@@ -1302,45 +1302,55 @@ def biplot(data_table, samples, variables, title,
                            marker=marker_map[m_val], s=marker_size,
                            label=f"{c_val} / {m_val}",
                            edgecolor='black', alpha=0.8)
-    
-    # Compute vector magnitudes
-    vector_lengths = np.linalg.norm(var_loadings, axis=1)
-    
-    # Select top N variables if n_arrows is specified
-    if n_arrows is not None and n_arrows < len(var_loadings):
-        top_indices = np.argsort(vector_lengths)[-n_arrows:]
-    else:
-        top_indices = np.arange(var_loadings.shape[0])
-    
-    # Scale arrows based on plot size
-    x_range = pca_scores[:, 0].ptp()
-    y_range = pca_scores[:, 1].ptp()
-    max_plot_radius = 0.3 * max(x_range, y_range)
-    max_arrow_length = vector_lengths.max()
-    arrow_scale = max_plot_radius / max_arrow_length
-    
-    arrow_labels = {}
-    
-    for count, i in enumerate(top_indices, start=1):
-        # Label arrows by number or variable name
-        if number_arrows:
-            arrow_label = str(count)
-            arrow_labels[count] = variables[i]
+                
+    if arrows != False:
+        
+        # Compute vector magnitudes for the arrows
+        vector_lengths = np.linalg.norm(var_loadings, axis=1)
+        
+        if arrows == True: # Plot all vectors
+            arrow_indices = np.arange(var_loadings.shape[0])
+        elif isinstance(arrows, int): # Plot only the top N vectors
+            arrow_indices = np.argsort(vector_lengths)[-arrows:]
+        elif isinstance(arrows, (list, tuple, np.ndarray)):
+            # Plot only the specified vectors
+            varname_to_idx = {name: idx for idx, name in enumerate(variables)}
+            arrow_indices = [varname_to_idx[name] for name in arrows
+                             if name in varname_to_idx]
         else:
-            arrow_label = variables[i]
-    
-        # Draw arrows
-        ax.arrow(0, 0,
-                 var_loadings[i, 0] * arrow_scale,
-                 var_loadings[i, 1] * arrow_scale,
-                 color='gray', alpha=0.8,
-                 head_width=0.03, head_length=0.05)
-    
-        # Add arrow labels
-        ax.text(var_loadings[i, 0] * arrow_scale * 1.15,
-                var_loadings[i, 1] * arrow_scale * 1.15,
-                arrow_label, color='gray',
-                ha='center', va='center', fontsize=9)
+            raise ValueError(
+                'arrows must be None, an int, or a list of variable names')
+
+        
+        # Scale arrows based on plot size
+        x_range = pca_scores[:, 0].ptp()
+        y_range = pca_scores[:, 1].ptp()
+        max_plot_radius = 0.3 * max(x_range, y_range)
+        max_arrow_length = vector_lengths.max()
+        arrow_scale = max_plot_radius / max_arrow_length
+        
+        arrow_labels = {}
+        
+        for count, i in enumerate(arrow_indices, start=1):
+            # Label arrows by number or variable name
+            if number_arrows:
+                arrow_label = str(count)
+                arrow_labels[count] = variables[i]
+            else:
+                arrow_label = variables[i]
+        
+            # Draw arrows
+            ax.arrow(0, 0,
+                     var_loadings[i, 0] * arrow_scale,
+                     var_loadings[i, 1] * arrow_scale,
+                     color='gray', alpha=0.8,
+                     head_width=0.03, head_length=0.05)
+        
+            # Add arrow labels
+            ax.text(var_loadings[i, 0] * arrow_scale * 1.15,
+                    var_loadings[i, 1] * arrow_scale * 1.15,
+                    arrow_label, color='gray',
+                    ha='center', va='center', fontsize=9)
     
     # Axis labels with explained variance
     pca_var = np.var(pca_scores, axis=0) / np.sum(np.var(pca_scores, axis=0))
