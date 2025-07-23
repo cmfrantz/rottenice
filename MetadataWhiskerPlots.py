@@ -15,13 +15,16 @@ This script was created as part of the Rotten Ice Project.
 
 Arguments:    None
 
-Requirements:
-    Metadata table (csv)
-        where rows = samples, columns = metadata characteristics
-        header row and index column are specified in the variables below
+Requirements:     
+    Sample Metadata (measurements) table (csv)
+        Where rows = samples, columns = metadata characteristics
+        Header row and index column are specified in the variables below
+        This is NOT the same metadata table used in QIIME2, which provides
+        metadata for each sample-gene-template sequenced. It is the master
+        metadata table of environmental measurements for each sample.
 
 Example in command line:
-    python ChemDataPCA.py
+    python MetadataWhiskerPlots.py
 
 Dependencies Install:
     sudo apt-get install python3-pip python3-dev
@@ -119,7 +122,8 @@ if __name__ == '__main__':
     
     # Import metadata file
     filename, directory, metadata = RottenIceModules.fileGet(
-        'Select metadata file', tabletype = 'metadata')
+        'Select sample metadata (environmental measurements) file',
+        tabletype = 'metadata-sample')
     
     # Trim & prep metadata file
     # Flatten lists of lists
