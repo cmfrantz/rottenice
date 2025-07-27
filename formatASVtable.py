@@ -84,6 +84,8 @@ sampleorder = RottenIceModules.genSampleListCS()
 template_order = ['cDNA','DNA']
 replicates = [1,2,3]
 
+toptaxa = 20 # Top ranked taxa to number
+
 
 ####################
 # FUNCTIONS
@@ -177,6 +179,15 @@ for ds in dsetlist:
     columns = ['taxonomy'] + samplecols
     otu_sorted = sortTable(otu_table_reordered, columns, 'taxonomy')
     otu_normed = normalizeTable(otu_sorted, samplecols)
+    
+    # Calculate average relative abundance and rank taxa
+    otu_ranked = otu_normed.copy()
+    otu_ranked['avg'] = otu_ranked[samplecols].mean(axis=1) # calculate the average abundance
+    otu_ranked.sort_values('avg', ascending=False, inplace=True)
+    for i in range(toptaxa):    # Add the rankings to the top most abundant
+        otu_ranked.at[otu_ranked.index[i],'rank'] = i+1
+    col_order = ['taxonomy','rank','avg'] + samplecols
+    otu_ranked = otu_ranked[col_order] # Sort the columns appropriately
         
     # Save to Excel file
     with pd.ExcelWriter(filename[:-4] + '_formatted.xlsx', engine='xlsxwriter') as writer:
@@ -184,4 +195,5 @@ for ds in dsetlist:
         asv_normed.to_excel(writer, sheet_name = 'ASV normalized', index = False)
         otu_sorted.to_excel(writer, sheet_name = 'Tax counts', index = False)
         otu_normed.to_excel(writer, sheet_name = 'Tax normalized', index = False)
+        otu_ranked.to_excel(writer, sheet_name = 'Tax ranked', index = False)
         
