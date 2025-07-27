@@ -70,6 +70,8 @@ import RottenIceVars
 ####################
 # VARIABLES
 
+fpath = os.getcwd()
+
 monthmap = {
     'M-CS'  : 'May',
     'JN-CS' : 'June',
@@ -77,15 +79,18 @@ monthmap = {
     'JY11'  : 'July - clean floe'
     }
 
+# Pulls hex values for standard colors for each month
+color_map_month = RottenIceVars.plotColorsByMonth
+
 materialmap = {
-    'I'     : 'ice-only',
-    'H'     : 'whole horizon',
-    'B'     : 'brine',
-    'P'     : 'percolate',
-    'D'     : 'drain',
-    'PW'    : 'pondwater',
-    'SW'    : 'seawater',
-    'BW'    : 'below-ice water'
+    'I'     : 'Ice-only melts',
+    'H'     : 'Whole horizon melts',
+    'B'     : 'Brines',
+    'P'     : 'Percolates',
+    'D'     : 'Drains',
+    'PW'    : 'Pondwater',
+    'SW'    : 'Seawater',
+    'BW'    : 'Below-ice water'
 }
 
 marker_map_horizon = {
@@ -96,18 +101,6 @@ marker_map_horizon = {
     'water'     : RottenIceVars.plotMarkersByHorizon['W']
     }
 
-''' Old color map
-color_map_fraction = {
-    'I'         : '#2066a8', # blue
-    'H'         : '#f6d6c2', # tan
-    'B'         : '#d47264', # orange-red
-    'P'         : '#B05F53', # red
-    'D'         : '#874940', # dark red
-    'PW'        : '#b5d1ae', # light green
-    'SW'        : '#326b77', # dark green
-    'BW'        : '#A799B7' # lavender
-    }
-'''
 # Pull the standard color map for fractions
 color_map_fraction = {
     'I'         : RottenIceVars.plotColorsByMaterial['I'],
@@ -120,12 +113,52 @@ color_map_fraction = {
     'BW'        : RottenIceVars.plotColorsByMaterial['BW']
     }
 
-# Pulls hex values for standard colors for each month
-color_map_month = RottenIceVars.plotColorsByMonth
 
 size_map_template = {
     'cDNA'      : 80,
     'DNA'       : 30
+    }
+
+
+dsets = {
+    '16S-all' : {
+        'title'     : '16S DNA + cDNA',
+        'md_size'   : 'template'
+        },
+    '18S-all' : {
+        'title'     : '18S DNA + cDNA',
+        'md_size'   : 'template'
+        },
+    'PrimProd-all' : {
+        'title'     : 'Eukaryotic primary producers\nDNA + cDNA',
+        'md_size'   : 'template'
+        },
+    '16S-cDNA' : {
+        'title'     : '16S cDNA',
+        'md_size'   : None
+        },
+    '18S-cDNA' : {
+        'title'     : '18S cDNA',
+        'md_size'   : None
+        },
+    'PrimProd-cDNA' : {
+        'title'     : 'Eukaryotic primary producers\ncDNA',
+        'md_size'   : None
+        },
+    '16S-HSW-cDNA' : {
+        'title'     : 'Only whole-horizon melts + seawater\n16S cDNA',
+        'md_size'   : None
+        },
+    '18S-HSW-cDNA' : {
+        'title'     : 'Only whole-horizon melts + seawater\n18S cDNA',
+        'md_size'   : None
+        },
+    'PrimProd-HSW-cDNA' : {
+        'title'     : ('Only whole-horizon melts + seawater'
+                       + 'Eukaryotic primary producers\ncDNA'
+                       + '\ncDNA'),
+        'md_size'   : None
+        },
     }
 
 
@@ -254,7 +287,8 @@ def prepMetadataWpcoa(metadata, title = '', directory = os.getcwd()):
 
 
 def plot2Dpcoa(
-        metadataWpcoa, pcoa_expvals, title = '', xlim = None, ylim = None,
+        metadataWpcoa, pcoa_expvals, filename, title = '',
+        xlim = None, ylim = None,
         marker_map = False, md_marker = None,
         color_map = False, md_color = None,
         size_map = False, md_size = None):
@@ -269,6 +303,8 @@ def plot2Dpcoa(
         with pcoa_1 and pcoa_2 the pcoa coordinates.
     pcoa_expvals : list of float
         List of the fraction of variance explained by each pcoa dimension.
+    filename : str
+        Where to save the image. Do not include the *.svg
     title : str, optional
         Plot title. Default is none.
     xlim : list of float, optional
@@ -397,6 +433,8 @@ def plot2Dpcoa(
     plt.subplots_adjust(right=0.8)
 
     plt.show()
+    
+    fig.savefig(filename + '.svg', transparent = True)
 
 
 
@@ -410,126 +448,83 @@ def plot2Dpcoa(
 fname, directory, metadata = fileGet(
     "Select the metadata file", file_type='tsv', directory = os.getcwd())
 
-# Import pcoa ordinates and prep metadata tables
-pcoa_md_16S, expvals_16S, pcoa_minmax_16S = prepMetadataWpcoa(
-    metadata, title = '16S', directory = directory)
-pcoa_md_18S, expvals_18S, pcoa_minmax_18S = prepMetadataWpcoa(
-    metadata, title = '18S', directory = directory)
-pcoa_md_PP, expvals_PP, pcoa_minmax_PP = prepMetadataWpcoa(
-    metadata, title = '18S Primary Producers', directory = directory)
-dsetmap = {
-    '16S' : [pcoa_md_16S, expvals_16S, pcoa_minmax_16S],
-    '18S' : [pcoa_md_18S, expvals_18S, pcoa_minmax_18S],
-    'Primary Producers' : [pcoa_md_PP, expvals_PP, pcoa_minmax_PP]
-    }
+# Generate and save plots for each dataset
+for d in dsets:
+    # Import pcoa ordinates and prep metadata tables
+    pcoa_md, pcoa_expvals, pcoa_minmax = prepMetadataWpcoa(
+        metadata, title = dsets[d]['title'], directory = directory)
 
-
-####################
-# Plot 1:   Samples from each fraction split by
-#           month (color) and horizon (symbol)
-#           to look for differences by month
-
-# Seperate plots for each gene (16S, 18S)
-for d in dsetmap:
-    
-    # Retrieve data for the gene
-    md = dsetmap[d][0]
-    expvals = dsetmap[d][1]
-    xlim = dsetmap[d][2].loc['pcoa_1',['min','max']]
-    ylim = dsetmap[d][2].loc['pcoa_2',['min','max']]
+    # Get limits
+    xlim = pcoa_minmax.loc['pcoa_1',['min','max']]
+    ylim = pcoa_minmax.loc['pcoa_2',['min','max']]
     
     # Only Chukchi Sea samples
-    cs = md[md['loc'].isin(['CS', 'JY10', 'JY11'])]
+    cs = pcoa_md[pcoa_md['loc'].isin(['CS', 'JY10', 'JY11'])]
     
+    # Use markers if a third metadata parameter (e.g. template) is specified
+    if dsets[d]['md_size'] != None:
+        size_map = size_map_template
+        md_size = dsets[d]['md_size']
+    else:
+        size_map = False
+        md_size = None
+
+    # Plot 1:   Samples from each fraction split by
+    #           month (color) and horizon (symbol)
+    #           to look for differences by month
+        
     # Plot all fractions together
     plot2Dpcoa(
-        cs, expvals, title = d + ' All fractions Weighted Unifrac',
+        cs, pcoa_expvals, fpath + d + '_fraction_all',
+        title = (dsets[d]['title']
+                 + ' from all fractions\nWeighted UniFrac Distances'),
         xlim = xlim, ylim = ylim,
         marker_map = marker_map_horizon, md_marker = 'horizon',
         color_map = color_map_month, md_color = 'month',
-        #size_map = size_map_template, md_size = 'template'
-        # for cDNA-only plots, comment out the line above
+        size_map = size_map, md_size = md_size
         )
     
     # Seperate plot for each fraction
-    for m in materialmap:
+    for f in materialmap:
         # Extract the samples
-        df = cs[cs['material']==m]
+        df = cs[cs['material']==f]
     
         plot2Dpcoa(
-            df, expvals,
-            title = d + ' ' + materialmap[m] + ' Weighted Unifrac',
+            df, pcoa_expvals, fpath + d + '_fraction_' + f,
+            title = (dsets[d]['title'] + ' from ' + materialmap[f]
+                     + '\nWeighted UniFrac Distances'),
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_month, md_color = 'month',
-            #size_map = size_map_template, md_size = 'template'
-            # for cDNA-only plots, comment out the line above
+            size_map = size_map, md_size = md_size
             )
 
-
-####################
-# Plot 2:   Plot all months together, each fraction seperately with
-#           month (color) and horizon (symbol)
-#           to look for month differences
-
-# Seperate plots for each gene (16S, 18S)
-for d in dsetmap:
-    
-    md = dsetmap[d][0]
-    expvals = dsetmap[d][1]
-    xlim = dsetmap[d][2].loc['pcoa_1',['min','max']]
-    ylim = dsetmap[d][2].loc['pcoa_2',['min','max']]
+    # Plot 2:   Plot all months together, each fraction seperately with
+    #           month (color) and horizon (symbol)
+    #           to look for month differences
     
     # Plot all horizons together
-    # Only Chukchi Sea samples
-    cs = md[md['loc'].isin(['CS', 'JY10', 'JY11'])]
     plot2Dpcoa(
-        cs, expvals, title = d + ' All months Weighted Unifrac',
+        cs, pcoa_expvals, fpath + d + '_month_all',
+        title = (dsets[d]['title']
+                 + ' from all months\nWeighted UniFrac Distances'),
         xlim = xlim, ylim = ylim,
         marker_map = marker_map_horizon, md_marker = 'horizon',
         color_map = color_map_fraction, md_color = 'material',
-        #size_map = size_map_template, md_size = 'template'
-        # for cDNA-only plots, comment out the line above
+        size_map = size_map, md_size = md_size
         )
     
     # Seperate plot for each month
-    for f in monthmap:
+    for m in monthmap:
         # Extract the samples
-        df = cs[cs['loc_id']==f]
+        df = cs[cs['loc_id']==m]
     
         plot2Dpcoa(
-            df, expvals,
-            title = d + ' ' + monthmap[f] + ' Weighted Unifrac',
+            df, pcoa_expvals, fpath + d + '_month_' + m,
+            title = (dsets[d]['title'] + ' from ' + monthmap[m]
+                     + '\nWeighted UniFrac Distances'),
             xlim = xlim, ylim = ylim,
             marker_map = marker_map_horizon, md_marker = 'horizon',
             color_map = color_map_fraction, md_color = 'material',
-            #size_map = size_map_template, md_size = 'template'
-            # for cDNA-only plots, comment out the line above
+            size_map = size_map, md_size = md_size
             )
-
-
-
-
-####################
-# EXAMPLE PLOTS
-
-# Matplotlib 2D plot
-# fig = plt.figure()
-# plt.scatter(pcoa_coords[1], pcoa_coords[2])
-
-# Matplotlib 3D plot
-# Matplotlib: https://matplotlib.org/stable/gallery/mplot3d/scatter3d.html#sphx-glr-gallery-mplot3d-scatter3d-py
-# fig = plt.figure()
-# ax = fig.add_subplot(projection='3d')
-# ax.scatter(pcoa_coords[1], pcoa_coords[2], pcoa_coords[3])
-
-# Using Plotly
-# Plotly: https://plotly.com/python/3d-scatter-plots/
-# Problem: symbols in 3D projection are really limited, making Plotly not
-#           really more useful than EMPeror.
-# import plotly.express as px
-# fig = px.scatter_3d(
-#    pcoa_md, x='pcoa_1', y='pcoa_2', z='pcoa_3',
-#    color = 'month', symbol = 'horizon')
-# fig.write_html(froot + '.html')
-
