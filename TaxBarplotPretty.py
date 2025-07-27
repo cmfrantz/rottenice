@@ -18,9 +18,11 @@ Arguments:  None
 Requirements:
     Annotated, taxonomy-collapsed taxonomy table in csv format
         where rows = taxonomy calls
-        columns = taxonomy, color, ranking, max, avg, then a list of sample names
+        columns = taxonomy, color, then a list of sample names
         Column 'color' defines the colors to use for each taxonomy value.
         Columns ranking, max, and avg are ignored
+            (the full list of columns to ignore should be added to the
+             script variables)
         The sample columns *must* be ordered how they should be ordered
         in the plot, sorted by months with the months in the correct order.
 
@@ -69,10 +71,34 @@ import RottenIceModules
 # VARIABLES
 ####################
 
-datasets = ['16S noUEMC QC', '18S noUBA QC'] # List of the datasets to generate plots for
+# Data to plot
+#datasets = ['16S noUEMC QC', '18S noUBA QC'] # List of the datasets to generate plots for
+datasets = ['16S noUEMC QC']
+#datasets = ['18S noUBA QC']
+
+# Define the sample list to plot. If False, plots all samples.
+samplelist = False
+#samplelist = RottenIceModules.genSampleList(['M','JN','JY10','JY11'],['HT','HM','HB'])
+# Set whether or not to average replicates of the samples
+# If False, all replicates are shown (no averaging)
+average_replicates = False
+# If True, samples are averaged for a single displayed result
+#average_replicates = True
+
+# Define the template to include in the plot (can be 'DNA', 'cDNA', or 'both')
+template = 'both'
+#template = 'DNA'
+#template = 'cDNA'
+
+# Set whether or not to average the samp
+
+# Spreadsheet variables
 colorcol = 'color'  # The column header in the data table that defines the color hex value
-ignorecols = ['supergroup','Big','Primary Producer','color',
-              'ranking','max','avg']     # Non-data columns in the data table
+ignorecols = ['Phylum','phylum','Supergroup','supergroup',
+              'Big','PrimProd','Primary Producer',
+              'color','ranking','rank','max','avg']     # Non-data columns that could be in the data table
+
+# Plot details
 fontsize = 11 # Font size for the plot
 title = 'Relative abundance of major taxa' # Title header for the plot
 monthmap = {
@@ -82,14 +108,11 @@ monthmap = {
     'JY11'  : 'July 11 clean floe'
     }
 
-# Define the sample list to plot. If False, plots all samples.
-samplelist = False
-#samplelist = RottenIceModules.genSampleList(['M','JN','JY10','JY11'],['HT','HM','HB'])
 
-# Define the template to include in the plot (can be 'DNA', 'cDNA', or 'both')
-template = 'both'
-#template = 'cDNA'
 
+####################
+# FUNCTIONS
+####################
 
 def filter_sample_ids(sample_ids, samplelist, template='both'):
     """
@@ -124,6 +147,60 @@ def filter_sample_ids(sample_ids, samplelist, template='both'):
         except IndexError:
             continue  # Skip malformed IDs
     return result
+
+
+def averageSamples(datatable, samples_parsed):
+    '''
+    Averages all replicates of each sample to be plotted.
+
+    Parameters
+    ----------
+    datatable : pd.DataFrame
+        Table with taxa as rows and sample names as columns
+    samples_parsed : pd.DataFrame
+        DataFrame with index = sample name and columns = 'month', 'label', 'template'
+
+    Returns
+    -------
+    datatable_avg : pd.DataFrame
+        Table with averaged replicates (columns are unique sample bases)
+    samples_parsed_avg : pd.DataFrame
+        Corresponding metadata, one row per averaged sample (replicate removed from label)
+    '''
+
+    # Make a copy to avoid modifying the original
+    samples_parsed = samples_parsed.copy()
+
+    # Remove replicate from 'label'
+    samples_parsed['label'] = samples_parsed['label'].astype(str).str.split('-').str[:-1].str.join('-')
+
+    # Combine parts into a unique sample base name
+    samples_parsed['sample_base'] = (
+        samples_parsed['month'].astype(str) + '-' +
+        samples_parsed['label'] + '.' +
+        samples_parsed['template'].astype(str)
+    )
+
+    # Transpose the data so samples are rows
+    datatable_T = datatable.T.copy()
+    datatable_T['sample_base'] = samples_parsed['sample_base']
+
+    # Average across replicates
+    averaged = datatable_T.groupby('sample_base').mean()
+
+    # Transpose back to original layout
+    datatable_avg = averaged.T
+
+    # Build metadata table, matching the new averaged samples
+    samples_parsed_avg = (
+        samples_parsed
+        .drop_duplicates('sample_base')
+        .set_index('sample_base')
+        .loc[datatable_avg.columns]
+    )
+
+    return datatable_avg, samples_parsed_avg
+
 
 #%%
 ####################
@@ -171,6 +248,10 @@ for d in datasets:
         samples_parsed['month'], categories=pd.unique(samples_parsed['month']),
         ordered=True)
     
+    # If averaging is selected, average the data
+    if average_replicates:
+        datatable, samples_parsed = averageSamples(datatable, samples_parsed)
+        
     # Keep original order of samples
     samples_parsed = samples_parsed.loc[datatable.columns]
     
@@ -216,14 +297,27 @@ for d in datasets:
     
     
     ########
+    # Determine if template column should be shown
+    unique_templates = samples_parsed['template'].unique()
+    include_template_column = len(unique_templates) > 1
+    
+    # Adjust title to include template if only one
+    plot_title = title + ' ' + d
+    if not include_template_column:
+        plot_title += f' ({unique_templates[0]})'
+    
+    # Determine height scaling
+    num_bars = len([col for col in datatable_spaced.columns if not col.startswith('space_')])
+    bar_height = 0.2 if num_bars >= 20 else 0.5
+    
     # Build the barplot
-    fig, ax = plt.subplots(figsize=(24, len(datatable_spaced.columns) * 0.2))  # less height per bar
+    fig, ax = plt.subplots(figsize=(24, num_bars * bar_height))
     datatable_spaced.T.plot(
         kind='barh',
         stacked=True,
         color=colormap.tolist(),
         ax=ax,
-        width=0.9  # To decrease spacing between bars, increase this number
+        width=0.9
     )
     
     # Flip y-axis to have first sample on top
@@ -233,26 +327,18 @@ for d in datasets:
     bar_positions = np.arange(len(datatable_spaced.columns))
     ax.set_yticks(bar_positions)
     
-    # Hide default y tick labels:
+    # Hide default y tick labels
     ax.set_yticklabels([])
     
     # Get axis limits for positioning
     xmin, xmax = ax.get_xlim()
     
-    # Set base x-position for the two-column labels left of the bar plot
-    # Column 1: the sample type label (material+horizon-replicate)
-    x_label_pos = -0.08 * xmax  # changes the spacing between the labels and
-                                # the plot edge
-                                # decreasing the value decreases the spacing
-                                # increasing it increases the spacing (and overlap)
+    # Set base x-position for the label(s) left of the bar plot
+    x_label_pos = -0.08 * xmax
     label_x = x_label_pos
-    # Column 2: the template (cDNA or DNA)
-    template_x = x_label_pos + 0.045 * xmax # changes the spacing between
-                                # the two label "columns"
-                                # increasing the value increases the spacing
-                                # decreasing the value tightens it
+    template_x = x_label_pos + (0.045 * xmax if include_template_column else 0.0)
     
-    # Add the two-column labels left of bar plot
+    # Add label(s) left of each bar
     for y_pos, col in enumerate(datatable_spaced.columns):
         if col.startswith('space_'):
             continue
@@ -260,43 +346,42 @@ for d in datasets:
         label = samples_parsed.loc[col, 'label']
         ax.text(
             label_x, y_pos, label, ha='left', va='center',
-            fontsize=fontsize, fontfamily='monospace')
-        # Sample template (column 2)
-        template = samples_parsed.loc[col, 'template']
-        ax.text(
-            template_x, y_pos, template, ha='left', va='center',
-            fontsize=fontsize, fontfamily='monospace')
+            fontsize=fontsize, fontfamily='monospace'
+        )
+        # Template (column 2), if applicable
+        if include_template_column:
+            template = samples_parsed.loc[col, 'template']
+            ax.text(
+                template_x, y_pos, template, ha='left', va='center',
+                fontsize=fontsize, fontfamily='monospace'
+            )
     
-    # Remove left spine and ticks (no lines or tick marks)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    # Remove spines and y-axis ticks
+    for spine in ['left', 'bottom', 'top', 'right']:
+        ax.spines[spine].set_visible(False)
     ax.set_yticklabels([''] * len(bar_positions))
     ax.tick_params(axis='y', which='both', length=0)
     
-    # Add month labels centered next to each month's group of samples
+    # Add month labels (vertical, aligned to left of label column)
     for month, center in month_separators:
         ax.text(
-            x=x_label_pos-0.02, y=center,
-            s=monthmap[month], ha='center', va='center', rotation = 'vertical',
-            fontsize=fontsize, weight='bold', transform=ax.transData,
+            x=x_label_pos - 0.02, y=center,
+            s=monthmap[month], ha='center', va='center', rotation='vertical',
+            fontsize=fontsize, weight='bold', transform=ax.transData
         )
     
-    # Adjust x limits to fit labels and bars
-    # Decrease the number to shift left, increase to shift right
+    # Adjust x-limits to fit labels and bars
     ax.set_xlim(x_label_pos - 0.03 * xmax, xmax)
     
     # Axis labels and title
-    ax.set_title(title + ' ' + d, fontweight='bold', fontsize = fontsize+2)
-    # Title is the common title plus the name of the dataset
+    ax.set_title(plot_title, fontweight='bold', fontsize=fontsize + 2)
     ax.set_xlabel('Relative Abundance')
     ax.set_ylabel('Samples')
     
-    # Add the legend (taxa names)
+    # Add legend (taxa names)
     ax.legend(
         loc='center left',
-        bbox_to_anchor=(0.98, 0.9), # horizontal from left, vertical from bottom
+        bbox_to_anchor=(0.98, 0.9),
         title='Taxa',
         fontsize=fontsize,
         frameon=False
@@ -305,6 +390,7 @@ for d in datasets:
     plt.tight_layout()
     plt.show()
     
-    # Save the figure
+    # Save figure
     fig.savefig(filename[:-4] + '.pdf', transparent=True)
     fig.savefig(filename[:-4] + '.svg', transparent=True)
+    

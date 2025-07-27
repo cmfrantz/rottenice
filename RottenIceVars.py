@@ -157,7 +157,7 @@ plotColorsByFraction = {
 
 for f in fraction_cmap:
     fraction_cmap[f] = [c/256 for c in fraction_cmap[f]]
-'''
+
 # Based on the 'Seasons of the Dead - Faded Spectrum' (muted rainbow) palette:
 # https://www.color-hex.com/color-palette/14353
 plotColorsByFraction = {
@@ -184,6 +184,35 @@ plotColorsByFraction = {
     'BW'    : '#83ca82', # green
     'Blank' : '#ffffff'
     }
+'''
+
+# Based on the Magma palette (colorblind-friendly):
+# https://waldyrious.net/viridis-palette-generator/
+# Shades & tints generated using https://www.color-hex.com/color/
+plotColorsByFraction = {
+    # Ice-only melts in tints of #221150 (indigo)
+    'IT'    : '#7a7096',
+    'IM'    : '#4e4072',
+    'IB'    : '#221150',
+    # Whole-core melts in tints of #982d80 (berry)
+    'HT'    : '#c181b2',
+    'HM'    : '#ac5699',
+    'HB'    : '#982d80',
+    # Brines in tints of #de4968 (salmonish)
+    'BT'    : '#f1b6c2',
+    'BM'    : '#eb91a4',
+    'BB'    : '#e46d86',
+    'B'     : '#de4968',
+    # Sackhole percolates and drains in tints of #fe9f6d (peach)
+    'P1'    : '#fec5a7',
+    'P2'    : '#feb28a',
+    'Drain' : '#fe9f6d',
+    # Other fluids in tints of #fcfdbf (yellow)
+    'PW'    : '#fcfdbf',
+    'SW'    : '#979772',
+    'BW'    : '#c9ca98',
+    'Blank' : '#ffffff'
+    }
 
 # Base the material categorical colormap on the fraction colormap used
 plotColorsByMaterial = {
@@ -202,7 +231,7 @@ plotMarkersByHorizon = {
     'T' : '^', # Top = triangle up
     'M' : 's', # Mid = square
     'B' : 'v', # Bottom = triangle down
-    'A' : 'h', # Whole-core = hexagon
+    'A' : 'D', # Whole-core = diamond
     'W' : 'o'  # Waters = circle
     }
 
@@ -334,6 +363,57 @@ metadataFullTitle = {
     'gels_md'       : 'Gel % < 1 ' + r'$\mu$' + 'm',
     'gels_lg'       : 'Gel % > 1 ' + r'$\mu$' + 'm',
     'gels_xl'       : 'Gel % > 10 ' + r'$\mu$' + 'm'    
+    }
+
+# Metadata variable full titles
+metadataShortTitle = {
+    'day_num'       : 'Date',
+    'date_num'      : 'Date',
+    'coord_lat'     : 'Latitude',
+    'coord_lon'     : 'Longitude',
+    'lat'           : 'Latitude',
+    'lon'           : 'Longitude',
+    'depth_in_ice'  : 'Depth in ice',
+    'pH'            : 'pH',
+    'temperature'   : 'Temperature',
+    'bulk_density'  : 'Density',
+    'bulk_ice_density'  : 'Density',
+    'salinity_direct' : 'Salinity',
+    'salinity_bulk_phys' : 'Salinity',
+    'salinity_lab'  : 'Salinity',
+    'salinity_comb' : 'Salinity',
+    'salinity'      : 'Salinity',
+    'SPM'           : 'SPM',
+    'DOC'           : 'DOC',
+    'Chl'           : 'Chlorophyll',
+    'chl'           : 'Chlorophyll',
+    'Phaeo'         : 'Phaeopigments',
+    'phaeo'         : 'Phaeopigments',
+    'Chl_Phaeo'     : '[Chl]/[Chl+Phaeo]',
+    'FoFa'          : r'$F_o/F_a$',
+    'PAM'           : 'PAM',
+    'SedLoad'       : 'Sediment load',
+    'bact_cell_ct'  : 'Bact. cell count',
+    'cell_ct'       : 'Bact. cell count',
+    'CTC'           : 'CTC %',
+    'bact_active_cell_ct' : 'Active bact. cells',
+    'cells_act'     :  'Active bact. cells',
+    'diatom_ct'     :  'Diatom count',
+    'phyto_ct_select' : 'Phytoplankton - excluding ciliates & others',
+    'phyto_ct_all'  : 'Phytoplankton count',
+    'phyto_ct_other' : 'Phytoplankton - excluding diatoms',
+    'pEPS'          : 'pEPS',
+    'POC'           : 'POC',
+    'nitrogen'      : 'PN',
+    'CN'            : 'C/N',
+    'sterivex_vol_filtered' : 'Sterivex vol. filtered',
+    'Chl_pEPS'      : 'Chl/pEPS',
+    'CTC_pEPS'      : '%CTC/pEPS',
+    'gels_total'    : 'Gel count',
+    'gels_sm'       : 'Small gels',
+    'gels_md'       : 'Med gels',
+    'gels_lg'       : 'Large gels',
+    'gels_xl'       : 'XL gels'    
     }
 
 # Types of files and info about them

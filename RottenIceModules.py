@@ -558,7 +558,7 @@ def splitTaxLevels(ASV_table):
 
 def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
     '''
-    This script reads in and formats an imported raw ASV table by adding \
+    This script reads in and formats an imported raw ASV table by adding
         taxonomy data.
 
     Parameters
@@ -568,10 +568,10 @@ def formatOTUtableData(OTU_table, max_level = 14, tax_reassign_list = []):
             index:  OTU IDs
             header: a list of sample names followed by 'taxonomy' at the end
     max_level : int (optional)
-        This is the maximum taxonomic level present in the dataset. \
+        This is the maximum taxonomic level present in the dataset.
             The default is 14 (i.e., 'D_14__').
     tax_reassign_list : dict (optional)
-        List of taxonomic names in the dataset with the values they should \
+        List of taxonomic names in the dataset with the values they should
             be reassigned. The default is none.
 
     Returns
