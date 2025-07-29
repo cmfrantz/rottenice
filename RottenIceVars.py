@@ -121,10 +121,10 @@ See https://matplotlib.org/tutorials/colors/colormaps.html for a full list.
 # Categorical colors to identify the months
 # Based on the viridis color palette
 plotColorsByMonth = {      
-	'M'    :      '#441a54',  # Purple
-	'JN'   :      '#3c538c',  # Blue
-	'JY10' :    '#abd03a',  # Light green
-	'JY11' :    '#fce61f'   # Yellow
+	'M'    : '#441a54',  # Purple
+	'JN'   : '#3c538c',  # Blue
+	'JY10' : '#abd03a',  # Light green
+	'JY11' : '#fce61f'   # Yellow
     }
 
 # Categorical color palette to identify the fractions
@@ -216,10 +216,10 @@ plotColorsByFraction = {
 
 # Base the material categorical colormap on the fraction colormap used
 plotColorsByMaterial = {
-    'I'     : plotColorsByFraction['IM'],
-    'H'     : plotColorsByFraction['HM'],
-    'B'     : plotColorsByFraction['BM'],
-    'P'     : plotColorsByFraction['P1'],
+    'I'     : plotColorsByFraction['IB'],
+    'H'     : plotColorsByFraction['HB'],
+    'B'     : plotColorsByFraction['B'],
+    'P'     : plotColorsByFraction['Drain'],
     'D'     : plotColorsByFraction['Drain'],
     'PW'    : plotColorsByFraction['PW'],
     'SW'    : plotColorsByFraction['SW'],

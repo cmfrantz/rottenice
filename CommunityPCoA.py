@@ -107,7 +107,7 @@ color_map_fraction = {
     'H'         : RottenIceVars.plotColorsByMaterial['H'],
     'B'         : RottenIceVars.plotColorsByMaterial['B'],
     'P'         : RottenIceVars.plotColorsByMaterial['P'],
-    'D'         : RottenIceVars.plotColorsByMaterial['I'],
+    'D'         : RottenIceVars.plotColorsByMaterial['D'],
     'PW'        : RottenIceVars.plotColorsByMaterial['PW'],
     'SW'        : RottenIceVars.plotColorsByMaterial['SW'],
     'BW'        : RottenIceVars.plotColorsByMaterial['BW']
