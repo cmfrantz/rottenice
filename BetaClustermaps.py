@@ -63,6 +63,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 ####################
 import os
 import pandas as pd
+import numpy as np
 import seaborn as sns
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage
@@ -71,6 +72,8 @@ import matplotlib
 # Define the font type to make exported plots editable in Adobe Illustrator
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['svg.fonttype'] = 'none'
+matplotlib.rcParams['font.family'] = 'Arial'
 
 import RottenIceModules
 import RottenIceVars
@@ -194,6 +197,28 @@ def parseSamples(distMatrix):
     return distMatrix
 
 
+def format_labels(index):
+    # Ensure we're working with a MultiIndex
+    if not isinstance(index, pd.MultiIndex):
+        return [str(i) for i in index]
+
+    level_names = index.names
+    labels = []
+
+    for i in range(len(index)):
+        entry = index[i]
+        entry_dict = dict(zip(level_names, entry))
+
+        parts = []
+        for key in ['Month', 'Fraction', 'Replicate', 'Template']:
+            if key in entry_dict:
+                parts.append(str(entry_dict[key]))
+
+        labels.append('-'.join(parts))
+
+    return labels
+
+
 def buildPlot(data, color_category, figsize, filename):
     '''Produces clustered heatmap plot'''
     
@@ -234,11 +259,30 @@ def buildPlot(data, color_category, figsize, filename):
         metric=None # Don't need to re-calculate distances since it's a distance matrix
         )
     
+    # Manually set the sample labels
+    # The default plot hides labels if there are too many samples,
+    # This forces all of them to be displayed
+    # Get the reordered row and column indices (otherwise they plot in reverse)
+    row_order = p.dendrogram_row.reordered_ind
+    col_order = p.dendrogram_col.reordered_ind
+    # Format labels as Month-Fraction-Replicate-Template (if present)
+    xlabels_all = format_labels(data.columns)
+    ylabels_all = format_labels(data.index)
+    # Reorder labels to match clustermap order
+    xlabels = [xlabels_all[i] for i in col_order]
+    ylabels = [ylabels_all[i] for i in row_order]
+    # Set ticks at center of cells
+    p.ax_heatmap.set_xticks(np.arange(len(xlabels)) + 0.5)
+    p.ax_heatmap.set_xticklabels(xlabels, rotation=90, fontsize=8)
+    # Add the labels
+    p.ax_heatmap.set_yticks(np.arange(len(ylabels)) + 0.5)
+    p.ax_heatmap.set_yticklabels(ylabels, rotation=0, fontsize=8)
+    
+    # Label plot axes
     p.ax_heatmap.set_xlabel('Sample')
     p.ax_heatmap.set_ylabel('Sample')
     p.cax.set_title('Distance')
 
-    
     # Save heatmap
     p.savefig(filename + '.svg', transparent = True)
     
@@ -253,7 +297,7 @@ def genHTMLPage(headstr, filepath):
             htmltxt = (headstr
                        + '<h1>' + gene + ' clustered heatmaps '
                        + '(' + sets[s]['title'] + ')</h1>'
-                       + '<p><img src = "MonthFractionKey_horiz.png"'
+                       + '<p><img src = "MonthFractionKey_horiz.svg"'
                        + ' height = 150></p>'
                        )
             
