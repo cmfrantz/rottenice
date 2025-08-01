@@ -72,6 +72,7 @@ import RottenIceVars
 
 fpath = os.getcwd()
 
+
 monthmap = {
     'M-CS'  : 'May',
     'JN-CS' : 'June',
@@ -89,8 +90,7 @@ materialmap = {
     'P'     : 'Percolates',
     'D'     : 'Drains',
     'PW'    : 'Pondwater',
-    'SW'    : 'Seawater',
-    'BW'    : 'Below-ice water'
+    'SW'    : 'Seawater'
 }
 
 marker_map_horizon = {
@@ -109,8 +109,7 @@ color_map_fraction = {
     'P'         : RottenIceVars.plotColorsByMaterial['P'],
     'D'         : RottenIceVars.plotColorsByMaterial['D'],
     'PW'        : RottenIceVars.plotColorsByMaterial['PW'],
-    'SW'        : RottenIceVars.plotColorsByMaterial['SW'],
-    'BW'        : RottenIceVars.plotColorsByMaterial['BW']
+    'SW'        : RottenIceVars.plotColorsByMaterial['SW']
     }
 
 
