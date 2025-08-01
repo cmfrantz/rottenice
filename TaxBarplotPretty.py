@@ -1,106 +1,43 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 16 16:38:21 2025
+Created on Wed Jul 30 13:13:03 2025
 
 @author: cariefrantz
-@project: RottenIce
-
-BUILDS TAXONOMIC ABUNDANCE BARPLOTS FORMATTED FOR PUBLICATION
-This script builds stacked horizontal barplots of relative taxonomic
-abundance for each sample. The plots are "prettified" for publication.
-
-This script was created as part of the Rotten Ice Project.
-ChatGPT was used to figure out how to adjust the formatting.
-
-
-Arguments:  None
-
-Requirements:
-    Annotated, taxonomy-collapsed taxonomy table in csv format
-        where rows = taxonomy calls
-        columns = taxonomy, color, then a list of sample names
-        Column 'color' defines the colors to use for each taxonomy value.
-        Columns ranking, max, and avg are ignored
-            (the full list of columns to ignore should be added to the
-             script variables)
-        The sample columns *must* be ordered how they should be ordered
-        in the plot, sorted by months with the months in the correct order.
-
-Example in command line:
-    python TaxBarplotPretty.py
-
-Dependencies Install:
-    pip install numpy
-    pip install pandas
-    pip install matplotlib
-
-You will also need to have the following files
-    in the same directory as this script.
-They contain modules and variables that this script calls.
-    RottenIceModules.py
-If you get an error indicating that one of these modules is not found,
-    change the working directory to the directory containing these files.
-
-Copyright (C) 2025  Carie M. Frantz
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
+
 ####################
 # IMPORTS
 ####################
 import os
 import pandas as pd
 import numpy as np
+
+import matplotlib
 import matplotlib.pyplot as plt
+# Define the font type to make exported plots editable in Adobe Illustrator
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['svg.fonttype'] = 'none'
+matplotlib.rcParams['font.family'] = 'Arial'
 
 import RottenIceModules
-
 
 ####################
 # VARIABLES
 ####################
+outdir = os.getcwd()
 
-# Data to plot
-#datasets = ['16S noUEMC QC', '18S noUBA QC'] # List of the datasets to generate plots for
-datasets = ['16S noUEMC QC']
-#datasets = ['18S noUBA QC']
-
-# Define the sample list to plot. If False, plots all samples.
-samplelist = False
-#samplelist = RottenIceModules.genSampleList(['M','JN','JY10','JY11'],['HT','HM','HB'])
-# Set whether or not to average replicates of the samples
-# If False, all replicates are shown (no averaging)
-average_replicates = False
-# If True, samples are averaged for a single displayed result
-#average_replicates = True
-
-# Define the template to include in the plot (can be 'DNA', 'cDNA', or 'both')
-template = 'both'
-#template = 'DNA'
-#template = 'cDNA'
-
-# Set whether or not to average the samp
+otu_datasets = ['16S noUEMC QC', '18S noUBA QC']
+algae_dataset = ['AlgaeID']
 
 # Spreadsheet variables
 colorcol = 'color'  # The column header in the data table that defines the color hex value
 ignorecols = ['Phylum','phylum','Supergroup','supergroup',
-              'Big','PrimProd','Primary Producer',
-              'color','ranking','rank','max','avg']     # Non-data columns that could be in the data table
+              'Big','PrimProd','Primary Producer','SylvieID',
+              'color','ranking','rank','max','avg','total','Total']     # Non-data columns that could be in the data table
 
 # Plot details
 fontsize = 11 # Font size for the plot
-title = 'Relative abundance of major taxa' # Title header for the plot
 monthmap = {
     'M'     : 'May',
     'JN'    : 'June',
@@ -113,7 +50,6 @@ monthmap = {
 ####################
 # FUNCTIONS
 ####################
-
 def filter_sample_ids(sample_ids, samplelist, template='both'):
     """
     Filters sample IDs by matching sample names and template.
@@ -149,6 +85,14 @@ def filter_sample_ids(sample_ids, samplelist, template='both'):
     return result
 
 
+def normalizeTable(table):
+    '''Normalizes the table to produce relative abundance from absolute counts'''
+    col_sums = table.sum(axis=0)
+    normalized = table.divide(col_sums.where(col_sums != 0, np.nan), axis=1)
+    normalized = normalized.fillna(0)
+    return normalized
+
+
 def averageSamples(datatable, samples_parsed):
     '''
     Averages all replicates of each sample to be plotted.
@@ -168,30 +112,33 @@ def averageSamples(datatable, samples_parsed):
         Corresponding metadata, one row per averaged sample (replicate removed from label)
     '''
 
-    # Make a copy to avoid modifying the original
     samples_parsed = samples_parsed.copy()
 
-    # Remove replicate from 'label'
-    samples_parsed['label'] = samples_parsed['label'].astype(str).str.split('-').str[:-1].str.join('-')
+    # Remove replicate from label
+    samples_parsed['samplename'] = samples_parsed['samplename'].astype(str).str.split('-').str[:-1].str.join('-')
 
     # Combine parts into a unique sample base name
     samples_parsed['sample_base'] = (
         samples_parsed['month'].astype(str) + '-' +
-        samples_parsed['label'] + '.' +
+        samples_parsed['samplename'] + '.' +
         samples_parsed['template'].astype(str)
     )
 
-    # Transpose the data so samples are rows
+    # Preserve order of first occurrence
+    sample_base_order = samples_parsed.drop_duplicates('sample_base')['sample_base']
+    samples_parsed['sample_base'] = pd.Categorical(samples_parsed['sample_base'], categories=sample_base_order, ordered=True)
+
+    # Transpose data so samples are rows
     datatable_T = datatable.T.copy()
     datatable_T['sample_base'] = samples_parsed['sample_base']
 
-    # Average across replicates
-    averaged = datatable_T.groupby('sample_base').mean()
+    # Average replicates in original order
+    averaged = datatable_T.groupby('sample_base', sort=False).mean()
 
-    # Transpose back to original layout
+    # Transpose back
     datatable_avg = averaged.T
 
-    # Build metadata table, matching the new averaged samples
+    # Rebuild metadata table in matching order
     samples_parsed_avg = (
         samples_parsed
         .drop_duplicates('sample_base')
@@ -202,21 +149,184 @@ def averageSamples(datatable, samples_parsed):
     return datatable_avg, samples_parsed_avg
 
 
+
+def parse_sample_names(sample_ids, style = 'short'):
+    """
+    Parses sample names into a DataFrame with columns:
+    ['month', 'label', 'template']
+    
+    style :
+        'short' : labels are sample codes
+        'horizon' : labels are long-format horizon names
+    """
+    parsed = []
+    for sid in sample_ids:
+        # If the sample name format is the full sample ID with template,
+        # e.g., 'M-CS-HT-1.16S-cDNA'
+        if '.' in sid:
+            month, fraction, replicate, gene, template = RottenIceModules.samplenameToMonthFractionReplicateGeneTemplate(
+                sid)
+            samplename = '-'.join([month,fraction,replicate])
+        # Otherwise, the sample name format is assumed to be short-format,
+        # e.g., 'M-CS-HT-1' or 'M-CS-HT'
+        else:
+            samplename = sid
+            template = ''
+            splits = sid.split('-')
+            month = splits[0]
+            if splits[-1].isdigit():
+                replicate = splits[-1]
+                fraction = splits[-2]
+            else:
+                replicate = ''
+                fraction = splits[-1]
+            
+        # Determine the label to use
+        if style == 'short':
+            if replicate == '':
+                label = fraction
+            else:
+                label = '-'.join([fraction,replicate])
+        if style == 'horizon':
+            f_name, h_name = RottenIceModules.parseFraction(fraction)
+            label = h_name
+        parsed.append((sid, samplename, month, label, template))
+        
+    df = pd.DataFrame(parsed,
+                      columns=['sample', 'samplename', 'month', 'label', 'template']
+                      ).set_index('sample')
+    return df
+
+
+
+def plot_taxa_barplot(datatable, samples_parsed, colormap, title, monthmap,
+                      xlabel = 'Relative Abundance',
+                      output_file=None, fontsize=11,
+                      label_columns=['label', 'template']):
+    """
+    Generate a stacked horizontal barplot for relative abundance data.
+
+    Parameters
+    ----------
+    datatable : pd.DataFrame
+        Taxa as rows, sample names as columns (in desired order).
+    samples_parsed : pd.DataFrame
+        Metadata for samples. Index = column names of datatable. Columns include 'month'.
+    colormap : pd.Series
+        Color values corresponding to taxa (index matches datatable).
+    title : str
+        Title for the plot.
+    monthmap : dict
+        Mapping from month codes to month labels.
+    output_file : str or None
+        If given, saves to PDF and SVG at this path (excluding extension).
+    fontsize : int
+        Font size for plot text.
+    label_columns : list of str
+        Which columns in samples_parsed to use for sample labels.
+        If empty, no labels will be drawn. If a two-item list, the two items
+        (e.g., 'label' and 'template') will appear in seperate columns.
+    """
+
+    samples_parsed['month'] = pd.Categorical(
+        samples_parsed['month'], categories=pd.unique(samples_parsed['month']),
+        ordered=True)
+
+    unique_months = samples_parsed['month'].cat.categories
+    new_order = []
+    month_separators = []
+    y_pos = 0
+    for month in unique_months:
+        month_samples = samples_parsed.index[samples_parsed['month'] == month]
+        if new_order:
+            y_pos += 1
+        month_start = y_pos
+        for col in month_samples:
+            new_order.append(col)
+            y_pos += 1
+        month_end = y_pos - 1
+        center = (month_start + month_end) / 2
+        month_separators.append((month, center))
+
+    datatable = datatable[new_order]
+    spacer = pd.Series(0, index=datatable.index)
+    spaced_data = []
+    for i, col in enumerate(datatable.columns):
+        spaced_data.append(datatable[col])
+        if i < len(datatable.columns) - 1:
+            curr_month = samples_parsed.loc[col, 'month']
+            next_month = samples_parsed.loc[datatable.columns[i + 1], 'month']
+            if curr_month != next_month:
+                spacer_col = spacer.rename(f'space_{i}')
+                spaced_data.append(spacer_col)
+    datatable_spaced = pd.concat(spaced_data, axis=1)
+
+    num_bars = len([c for c in datatable_spaced.columns if not c.startswith('space_')])
+    
+    # Dynamic bar height based on number of bars
+    bar_height = min(0.5, max(0.2, 10 / num_bars))
+
+    fig, ax = plt.subplots(figsize=(24, num_bars * bar_height))
+    datatable_spaced.T.plot(kind='barh', stacked=True, color=colormap.tolist(), ax=ax, width=0.9)
+    ax.invert_yaxis()
+    bar_positions = np.arange(len(datatable_spaced.columns))
+    ax.set_yticks(bar_positions)
+    ax.set_yticklabels([])
+
+    xmin, xmax = ax.get_xlim()
+    x_offsets = [-0.08 * xmax + 0.045 * xmax * i for i in range(len(label_columns))]
+
+    for y_pos, col in enumerate(datatable_spaced.columns):
+        if col.startswith('space_'):
+            continue
+        for i, label_col in enumerate(label_columns):
+            label = samples_parsed.loc[col, label_col]
+            ax.text(x_offsets[i], y_pos, label, ha='left', va='center',
+                    fontsize=fontsize, fontfamily='monospace')
+
+    for spine in ['left', 'bottom', 'top', 'right']:
+        ax.spines[spine].set_visible(False)
+    ax.tick_params(axis='y', length=0)
+
+    for month, center in month_separators:
+        month_label_x = x_offsets[0] - 0.04 * (xmax - xmin)
+        ax.text(month_label_x, center, monthmap[month], ha='center', va='center',
+                rotation='vertical', fontsize=fontsize, weight='bold', transform=ax.transData)
+
+    ax.set_xlim(x_offsets[0] - 0.03 * xmax, xmax)
+
+    ax.set_title(title, fontweight='bold', fontsize=fontsize + 2)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel('Samples')
+
+    ax.legend(loc='center left', bbox_to_anchor=(0.98, 0.9),
+              title='Taxa', fontsize=fontsize, frameon=False)
+
+    plt.tight_layout()
+    plt.show()
+
+    if output_file:
+        fig.savefig(output_file + '.pdf', transparent=True)
+        fig.savefig(output_file + '.svg', transparent=True)
+
+
+
 #%%
 ####################
 # MAIN FUNCTION
 ####################
-directory = os.getcwd()
-
-for d in datasets:
     
-    ########
-    # Import and format the data table
+#####################
+# Plot Set 1: Full dataset plots
+
+for d in otu_datasets:
+
+    template = 'both'
     
     # Import formatted collapsed taxonomy file
     filename, directory, table = RottenIceModules.fileGet(
-        'Select taxonomy-collapsed file for ' + d,
-        file_type='csv', header_row=0, index_col=0
+        'Select taxonomy-collapsed Top 20 taxa file for ' + d,
+        file_type='csv', header_row=0, index_col=0, directory = outdir
     )
     table = table[table.index.notnull()]
     
@@ -227,170 +337,95 @@ for d in datasets:
     cols = [c for c in table.columns if c not in ignorecols]
     datatable = table[cols]
     
-    # Trim further to just the samples of interest
-    if samplelist != False:
+    # Parse the sample names into their metadata to add to the plot labels
+    samples_parsed = parse_sample_names(cols)
+    
+    # Build the plot
+    plot_taxa_barplot(
+        datatable, samples_parsed, colormap,
+        'Relative abundance of major taxa', monthmap,
+        output_file = outdir + '\\otu_barplot_all ' + d, 
+        fontsize=fontsize, label_columns=['label', 'template'])
+   
+    
+#####################
+# Plot Set 2: Whole-horizon melt averages  
+
+for d in otu_datasets:    
+    # Import formatted collapsed taxonomy file
+    filename, directory, table = RottenIceModules.fileGet(
+        'Select taxonomy-collapsed Top 10 taxa file for ' + d,
+        file_type='csv', header_row=0, index_col=0, directory = outdir
+    )
+    table = table[table.index.notnull()]
+    
+    # Get the list of colors
+    colormap = table[colorcol]
+    
+    # Trim the table to just the data
+    cols = [c for c in table.columns if c not in ignorecols]
+    datatable = table[cols]
+        
+        
+    for template in ['DNA','cDNA']:
+        
+        # Trim further to just the samples of interest
+        samplelist = RottenIceModules.genSampleList(['M','JN','JY10','JY11'],['HT','HM','HB'])
         include_samples = filter_sample_ids(
-            cols, samplelist, template = template)
+                cols, samplelist, template = template)
         datatable = table[include_samples]
-                
-    # Parse sample names into components for labeling the plot
-    samples_parsed = pd.DataFrame(
-        index=datatable.columns, columns=['month', 'label', 'template'])
-    for s in samples_parsed.index:
-        m, f, r, g, t = RottenIceModules.samplenameToMonthFractionReplicateGeneTemplate(s)
-        samples_parsed.loc[s, 'month'] = m
-        samples_parsed.loc[s, 'label'] = f + '-' + r
-        samples_parsed.loc[s, 'template'] = t
-    
-    # Figure out the month labels
-    # Make sure 'month' is categorical with order preserved as it appears
-    samples_parsed['month'] = pd.Categorical(
-        samples_parsed['month'], categories=pd.unique(samples_parsed['month']),
-        ordered=True)
-    
-    # If averaging is selected, average the data
-    if average_replicates:
+        
+        # Parse the sample names into their metadata to add to the plot labels
+        samples_parsed = parse_sample_names(include_samples, style = 'horizon')
+        
+        # Average the samples
         datatable, samples_parsed = averageSamples(datatable, samples_parsed)
         
-    # Keep original order of samples
-    samples_parsed = samples_parsed.loc[datatable.columns]
-    
-    # Identify month groups in original order
-    unique_months = samples_parsed['month'].cat.categories
-    
-    new_order = []
-    month_separators = []
-    y_pos = 0
-    
-    for month in unique_months:
-        # samples for this month in original order
-        month_samples = samples_parsed.index[samples_parsed['month'] == month]
-        if new_order:
-            y_pos += 1  # add a spacer row between months
-        month_start = y_pos
-        for col in month_samples:
-            new_order.append(col)
-            y_pos += 1
-        month_end = y_pos - 1
-        month_center = (month_start + month_end) / 2
-        month_separators.append((month, month_center))
-    
-    # Reorder datatable preserving original order within months
-    datatable = datatable[new_order]
-    
-    # Add spacer rows between months to match new bar positions (with the spacers)
-    spacer = pd.Series(0, index=datatable.index)
-    spaced_data = []
-    final_order = []
-    for i, col in enumerate(datatable.columns):
-        spaced_data.append(datatable[col])
-        final_order.append(col)
-        if i < len(datatable.columns) - 1:
-            curr_month = samples_parsed.loc[col, 'month']
-            next_month = samples_parsed.loc[datatable.columns[i + 1], 'month']
-            if curr_month != next_month:
-                spacer_col = spacer.rename(f'space_{i}')
-                spaced_data.append(spacer_col)
-                final_order.append(spacer_col.name)
-    
-    datatable_spaced = pd.concat(spaced_data, axis=1)
+        # Build the plot
+        plot_taxa_barplot(
+            datatable, samples_parsed, colormap,
+            'Average relative abundance of major taxa (' + d + ' ' + template + ')',
+            monthmap,
+            output_file = outdir + '\\otu_barplot_H_avg ' + d + ' ' + template, 
+            fontsize=fontsize, label_columns=['label'])
     
     
-    ########
-    # Determine if template column should be shown
-    unique_templates = samples_parsed['template'].unique()
-    include_template_column = len(unique_templates) > 1
-    
-    # Adjust title to include template if only one
-    plot_title = title + ' ' + d
-    if not include_template_column:
-        plot_title += f' ({unique_templates[0]})'
-    
-    # Determine height scaling
-    num_bars = len([col for col in datatable_spaced.columns if not col.startswith('space_')])
-    bar_height = 0.2 if num_bars >= 20 else 0.5
-    
-    # Build the barplot
-    fig, ax = plt.subplots(figsize=(24, num_bars * bar_height))
-    datatable_spaced.T.plot(
-        kind='barh',
-        stacked=True,
-        color=colormap.tolist(),
-        ax=ax,
-        width=0.9
-    )
-    
-    # Flip y-axis to have first sample on top
-    ax.invert_yaxis()
-    
-    # Manually position the bars
-    bar_positions = np.arange(len(datatable_spaced.columns))
-    ax.set_yticks(bar_positions)
-    
-    # Hide default y tick labels
-    ax.set_yticklabels([])
-    
-    # Get axis limits for positioning
-    xmin, xmax = ax.get_xlim()
-    
-    # Set base x-position for the label(s) left of the bar plot
-    x_label_pos = -0.08 * xmax
-    label_x = x_label_pos
-    template_x = x_label_pos + (0.045 * xmax if include_template_column else 0.0)
-    
-    # Add label(s) left of each bar
-    for y_pos, col in enumerate(datatable_spaced.columns):
-        if col.startswith('space_'):
-            continue
-        # Sample label (column 1)
-        label = samples_parsed.loc[col, 'label']
-        ax.text(
-            label_x, y_pos, label, ha='left', va='center',
-            fontsize=fontsize, fontfamily='monospace'
-        )
-        # Template (column 2), if applicable
-        if include_template_column:
-            template = samples_parsed.loc[col, 'template']
-            ax.text(
-                template_x, y_pos, template, ha='left', va='center',
-                fontsize=fontsize, fontfamily='monospace'
-            )
-    
-    # Remove spines and y-axis ticks
-    for spine in ['left', 'bottom', 'top', 'right']:
-        ax.spines[spine].set_visible(False)
-    ax.set_yticklabels([''] * len(bar_positions))
-    ax.tick_params(axis='y', which='both', length=0)
-    
-    # Add month labels (vertical, aligned to left of label column)
-    for month, center in month_separators:
-        ax.text(
-            x=x_label_pos - 0.02, y=center,
-            s=monthmap[month], ha='center', va='center', rotation='vertical',
-            fontsize=fontsize, weight='bold', transform=ax.transData
-        )
-    
-    # Adjust x-limits to fit labels and bars
-    ax.set_xlim(x_label_pos - 0.03 * xmax, xmax)
-    
-    # Axis labels and title
-    ax.set_title(plot_title, fontweight='bold', fontsize=fontsize + 2)
-    ax.set_xlabel('Relative Abundance')
-    ax.set_ylabel('Samples')
-    
-    # Add legend (taxa names)
-    ax.legend(
-        loc='center left',
-        bbox_to_anchor=(0.98, 0.9),
-        title='Taxa',
-        fontsize=fontsize,
-        frameon=False
-    )
-    
-    plt.tight_layout()
-    plt.show()
-    
-    # Save figure
-    fig.savefig(filename[:-4] + '.pdf', transparent=True)
-    fig.savefig(filename[:-4] + '.svg', transparent=True)
-    
+#####################
+# Plot Set 3: Algae IDs 
+# Get Algae ID file
+filename, directory, table = RottenIceModules.fileGet(
+    'Select Algae ID taxonomy table',
+    file_type='csv', header_row=0, index_col=0, directory = outdir
+)
+
+table = table[table.index.notnull()]
+
+# Get the list of colors
+colormap = table[colorcol]
+
+# Trim the table to just the data
+cols = [c for c in table.columns if c not in ignorecols]
+
+# Get a sorted sample list
+possibleSamples = RottenIceModules.genSampleListCS()
+samplelist = [s for s in possibleSamples if s in cols]
+
+datatable = table[samplelist]
+normtable = normalizeTable(datatable)
+
+# Parse labels
+samples_parsed = parse_sample_names(samplelist)
+
+# Build the plots
+plot_taxa_barplot(
+    datatable, samples_parsed, colormap,
+    'Absolute abundance of algal groups', monthmap,
+    output_file = outdir + '\\algae_barplot_abs', fontsize = fontsize,
+    xlabel = 'Abundance ($10^{6}\\,\\mathrm{cells} \\cdot L^{-1}$)',
+    label_columns=['label'])
+
+plot_taxa_barplot(
+    normtable, samples_parsed, colormap,
+    'Relative abundance of algal groups', monthmap,
+    output_file = outdir + '\\algae_barplot_rel', fontsize = fontsize,
+    label_columns=['label'])
