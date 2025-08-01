@@ -42,6 +42,28 @@ months = {
     'July 11'   : 'JY11'
     }
 
+nonstandardFractions = { # Fractions that don't include T/M/B
+    'B'     : 'brine',
+    'P1'    : 'upper-core percolate',
+    'P2'    : 'lower-core percolate',
+    'Drain' : 'whole-core drain',
+    'PW'    : 'pond water',
+    'BW'    : 'core-bottom water',
+    'SW'    : 'seawater'
+    }
+
+standardFractions = { # Fractions that do include T/M/B
+    'H'     : 'whole-horizon melt',
+    'I'     : 'ice-only melt',
+    'B'     : 'brine'
+    }
+
+horizons = {
+    'T'     : 'top',
+    'M'     : 'middle',
+    'B'     : 'bottom'
+    }
+
 # Available samples collected each month for the CS dataset
 fraction_sets_CS = {
     'May'       : ['HT', 'HM', 'HB',
@@ -208,9 +230,9 @@ plotColorsByFraction = {
     'P2'    : '#feb28a',
     'Drain' : '#fe9f6d',
     # Other fluids in tints of #fcfdbf (yellow)
-    'PW'    : '#fcfdbf',
-    'SW'    : '#979772',
-    'BW'    : '#c9ca98',
+    'PW'    : '#e2e3ab',
+    'SW'    : '#b0b185',
+    'BW'    : '#000000',
     'Blank' : '#ffffff'
     }
 
