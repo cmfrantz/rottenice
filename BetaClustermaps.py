@@ -103,9 +103,7 @@ file_pfx = RottenIceVars.file_sets['beta_cluster']['pfx']
 alt_text_pfx = 'Sample clustermap: '
 
 # Correct sample info when sample names are misleading
-correct_sample_info = {
-    'JN-SW' : 'BW'
-    }
+correct_sample_info = {}
 
 # Plot variables
 cmap = RottenIceVars.cmap
@@ -154,7 +152,7 @@ fractions = {
         },
     'F' : {
         'title'     : 'Fluids',
-        'subset'    : ['BT', 'BM', 'BB', 'B','P1','P2','PW','BW','SW','Drain']
+        'subset'    : ['BT', 'BM', 'BB', 'B','P1','P2','PW','SW','Drain']
         }
     }
     
