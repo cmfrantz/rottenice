@@ -215,6 +215,24 @@ def samplenameToMonthFractionReplicateGeneTemplate(samplename):
     template = split2[1]
     return month, fraction, replicate, gene, template
 
+
+def parseFraction(fraction):  
+    '''Returns the long-format fraction type and horizon from a fraction code'''
+    if fraction in RottenIceVars.nonstandardFractions:
+        f_name = RottenIceVars.nonstandardFractions[fraction]
+        h_name = ''
+        
+    elif len(fraction) == 2 and fraction[0] in RottenIceVars.standardFractions:
+        f_name = RottenIceVars.standardFractions[fraction[0]]
+        h_name = RottenIceVars.horizons[fraction[1]]
+        
+    else:
+        raise ValueError(f"Unrecognized fraction code '{fraction}'. Must be in nonstandardFraction or a 2-character code where the first character is in standardFractions and the second in horizons.")
+        
+    return f_name, h_name
+        
+            
+
 #---------------------------------
 # DATA PREP: GENERAL
 #---------------------------------
