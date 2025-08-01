@@ -76,9 +76,25 @@ import RottenIceVars
 # VARIABLES
 ####################
 
+monthcode = {
+    'M': 'May',
+    'JN': 'June',
+    'JY10': 'July 10\nDirty Floe',
+    'JY11': 'July 11\nClean Floe'
+}
+
 # Variables defining what samples and metadata parameters to plot
-sets = [['M'],['JN'],['JY10'],['JY11'],['M','JN'],['JY10','JY11']]
+# sets = [['M'],['JN'],['JY10'],['JY11'],['M','JN'],['JY10','JY11']]
+sets = [['M'],['JN'],['JY10'],['JY11']]
 fractions = ['HT','HM','HB']
+varlist = [['temperature','salinity_comb','bulk_density'],
+           ['SPM', 'nitrogen','CN'],
+           ['DOC','POC','pEPS'],
+           ['Chl','Phaeo'],
+           ['FoFa','PAM'],
+           ['bact_cell_ct', 'CTC', 'bact_active_cell_ct'],
+           ['phyto_ct_all', 'diatom_ct', 'phyto_ct_other']]
+'''
 varlist = [['temperature','salinity_comb','bulk_density'],
            ['SPM', 'nitrogen','CN'],
            ['DOC','POC','pEPS'],
@@ -88,6 +104,7 @@ varlist = [['temperature','salinity_comb','bulk_density'],
            ['phyto_ct_all', 'diatom_ct', 'phyto_ct_other'],
            ['gels_total','gels_sm','gels_md'],
            ['gels_lg','gels_xl']]
+'''
 
 # Variables defining plot parameters
 # Plot size
@@ -159,7 +176,7 @@ if __name__ == '__main__':
                 for dataset in comb_data:
                     data = dataset[~np.isnan(dataset)]
                     boxplotvals.append(data)
-                axs[row,col].set_title(var)
+                #axs[row,col].set_title(var)
                 axs[row,col].boxplot(boxplotvals, showfliers = False)
                 
                 # Layer on individual points
@@ -169,9 +186,15 @@ if __name__ == '__main__':
                                           **markerprops[n][p])
                         
                 # Add axis labels
+                '''
                 xticklabels = [
                     '-'.join(months) + '\n(n=' + str(len(boxplotvals[i])) + ')'
                     for i,months in enumerate(sets)]
+                '''
+                xticklabels = [
+                    '\n'.join([monthcode.get(m, m) for m in months])
+                    for i, months in enumerate(sets)
+                ]
                 axs[row,col].set_xticklabels(xticklabels)
                 axs[row,col].set_ylabel(RottenIceVars.metadataFullTitle[var])
                 if var in vars2format:
